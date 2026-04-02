@@ -62,6 +62,7 @@ import PrinterSettings from '../screens/PrinterSettings';
 import CreateProductScreen from '../screens/ProductScreen';
 import ProductScreen from '../screens/ProductScreen';
 import ProductListScreen from '../screens/ProductScreen/ProductListScreen';
+import SalesScreen from '../screens/SalesScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -107,7 +108,7 @@ export type BottomTabParamList = {
   FoodReport: undefined;
   ProductScreen: undefined;
   ProductListScreen: undefined;
-
+  SalesScreen: undefined;
   ProfileScreen: undefined;
   Settings: undefined;
   Profile: undefined;
@@ -247,8 +248,8 @@ const TabNavigator: React.FC = () => {
 
       {role == 'ADMIN' && (
         <Tab.Screen
-          name="Attendance"
-          component={AdminAttendanceScreen}
+          name="SalesScreen"
+          component={SalesScreen}
           options={{
             headerShown: false,
             tabBarButton: (props: any) => {
@@ -258,7 +259,7 @@ const TabNavigator: React.FC = () => {
               return (
                 <AnimatedTabButton
                   {...props}
-                  label="Attendance"
+                  label="Sales"
                   isSelected={isSelected}
                   icon={
                     <AttendanceIcon

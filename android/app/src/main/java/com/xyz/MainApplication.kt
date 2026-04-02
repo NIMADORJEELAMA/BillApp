@@ -1,4 +1,4 @@
-package com.HillTopResort
+package com.BillPe
 
 import android.app.Application
 import com.facebook.react.PackageList

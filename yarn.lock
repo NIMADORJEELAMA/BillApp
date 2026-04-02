@@ -3843,9 +3843,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"HillTopResort@workspace:.":
+"BillPe@workspace:.":
   version: 0.0.0-use.local
-  resolution: "HillTopResort@workspace:."
+  resolution: "BillPe@workspace:."
   dependencies:
     "@babel/core": ^7.25.2
     "@babel/preset-env": ^7.25.3
@@ -3895,11 +3895,13 @@ __metadata:
     react-native-safe-area-context: ^5.4.0
     react-native-screens: ^4.10.0
     react-native-skeleton-placeholder: ^5.2.4
+    react-native-sound: ^0.13.0
     react-native-svg: ^15.12.0
     react-native-svg-transformer: ^1.5.1
     react-native-thermal-receipt-printer-image-qr: ^0.1.12
     react-native-toast-message: ^2.3.3
     react-native-vector-icons: ^10.2.0
+    react-native-vision-camera: ^4.7.3
     react-redux: ^9.2.0
     react-test-renderer: 19.0.0
     socket.io-client: ^4.8.3
@@ -9441,6 +9443,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-sound@npm:^0.13.0":
+  version: 0.13.0
+  resolution: "react-native-sound@npm:0.13.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 75e08645103930e914d7c40fd6d580f0f3399fe2493220dbbee974744eef75e877ed05465c2988e8450472e9546d12a4b01ce305337365d013ed39853ae6498a
+  languageName: node
+  linkType: hard
+
 "react-native-svg-transformer@npm:^1.5.1":
   version: 1.5.1
   resolution: "react-native-svg-transformer@npm:1.5.1"
@@ -9505,6 +9517,26 @@ __metadata:
     fa6-upgrade: bin/fa6-upgrade.sh
     generate-icon: bin/generate-icon.js
   checksum: fda930df4e63f12533268f5b339ebe4c77c691eae43503328466b3087ed868a06a4593fd246e75ac6b5ec955543eec35608c7922191bdcc3b3a94ed7f3575ef0
+  languageName: node
+  linkType: hard
+
+"react-native-vision-camera@npm:^4.7.3":
+  version: 4.7.3
+  resolution: "react-native-vision-camera@npm:4.7.3"
+  peerDependencies:
+    "@shopify/react-native-skia": "*"
+    react: "*"
+    react-native: "*"
+    react-native-reanimated: "*"
+    react-native-worklets-core: "*"
+  peerDependenciesMeta:
+    "@shopify/react-native-skia":
+      optional: true
+    react-native-reanimated:
+      optional: true
+    react-native-worklets-core:
+      optional: true
+  checksum: e3abe484e4303d4fa9088e546e846642f4be503180ed24eaf74fc9e11c667cee779c5a9de4f27999dccb830ee60760badc641ee869fc6015e7ab7bec0f494f6d
   languageName: node
   linkType: hard
 
