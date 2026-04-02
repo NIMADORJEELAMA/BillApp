@@ -8,13 +8,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
 import color from '../../assets/Color/color';
-import swiggyColors from '../../assets/Color/swiggyColor';
-import ProductBarcodeCard from './ProductBarcodeCard';
+import ProductFormModal from './ProductFormModal'; // Ensure correct path
+// Optional: import { MaterialIcons } from '@expo/vector-icons';
 
 export default function ProductListScreen({navigation}: any) {
   const [loading, setLoading] = useState(true);
@@ -22,18 +23,12 @@ export default function ProductListScreen({navigation}: any) {
   const [products, setProducts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [showCodeModal, setShowCodeModal] = useState(false);
-  const handleProductPress = (product: any) => {
-    setSelectedProduct(product);
-    setShowCodeModal(true);
-  };
-  console.log('products', products);
+  const [modalVisible, setModalVisible] = useState(false);
+
   const loadProducts = async (showSpinner = true) => {
     try {
       if (showSpinner) setLoading(true);
       const response = await axiosInstance.get('/products');
-
-      // Accessing the 'items' property from your specific API structure
       setProducts(response.data.items || []);
     } catch (error) {
       Toast.show({type: 'error', text1: 'Failed to load products'});
@@ -47,7 +42,6 @@ export default function ProductListScreen({navigation}: any) {
     loadProducts();
   }, []);
 
-  // Filter products based on search
   const filteredProducts = useMemo(() => {
     return products.filter(
       p =>
@@ -57,73 +51,111 @@ export default function ProductListScreen({navigation}: any) {
     );
   }, [products, searchQuery]);
 
+  const openEditModal = (item: any) => {
+    setSelectedProduct(item);
+    setModalVisible(true);
+  };
+
+  const openAddModal = () => {
+    setSelectedProduct(null);
+    setModalVisible(true);
+  };
+
   const renderProductRow = ({item, index}: any) => {
-    // Your API returns price as a string "110", convert to number for formatting
-    const displayPrice = parseFloat(item.price).toLocaleString();
     const isLowStock = item.stockQty <= (item.minStock || 5);
 
     return (
-      <TouchableOpacity
-        onPress={() => handleProductPress(item)}
-        style={[
-          styles.tableRow,
-          index % 2 !== 0 && {backgroundColor: '#fcfdfe'},
-        ]}>
-        <View style={{flex: 2}}>
-          <Text style={styles.cellName} numberOfLines={1}>
+      <View
+        style={[styles.rowContainer, index % 2 !== 0 && styles.rowAlternate]}>
+        {/* Product Info Column */}
+        <View style={styles.colMain}>
+          <Text style={styles.primaryText} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.cellBarcode}>{item.barcode || 'No SKU'}</Text>
+          <Text style={styles.secondaryText}>{item.barcode || 'NO SKU'}</Text>
         </View>
 
-        <View style={{flex: 1, alignItems: 'center'}}>
-          <Text style={[styles.cellStock, isLowStock && {color: '#ef4444'}]}>
-            {item.stockQty} {item.unit}
+        {/* Stock Status Column */}
+        <View style={styles.colStock}>
+          <View
+            style={[
+              styles.badge,
+              isLowStock ? styles.badgeLow : styles.badgeOk,
+            ]}>
+            <Text
+              style={[
+                styles.badgeText,
+                isLowStock ? styles.textLow : styles.textOk,
+              ]}>
+              {item.stockQty} {item.unit}
+            </Text>
+          </View>
+        </View>
+
+        {/* Price Column */}
+        <View style={styles.colPrice}>
+          <Text style={styles.priceText}>
+            ₹{parseFloat(item.price).toLocaleString()}
           </Text>
-          {isLowStock && <Text style={styles.lowStockLabel}>LOW STOCK</Text>}
         </View>
 
-        <View style={{flex: 1, alignItems: 'flex-end'}}>
-          <Text style={styles.cellPrice}>₹{displayPrice}</Text>
-        </View>
-      </TouchableOpacity>
+        {/* Action Column */}
+        <TouchableOpacity
+          style={styles.colAction}
+          onPress={() => openEditModal(item)}>
+          <Text style={styles.editActionText}>EDIT</Text>
+        </TouchableOpacity>
+      </View>
     );
   };
 
   return (
-    <MainLayout title="Inventory" showBack>
+    <MainLayout title="Inventory Management" showBack>
       <View style={styles.container}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or barcode..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate('CreateProduct')}>
-            <Text style={styles.addButtonText}>+</Text>
+        {/* Top Control Bar */}
+        <View style={styles.topBar}>
+          <View style={styles.searchWrapper}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Filter products..."
+              placeholderTextColor="#94a3b8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
+            <Text style={styles.addBtnText}>+ NEW</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Table Header */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.columnHeader, {flex: 2}]}>PRODUCT / SKU</Text>
-          <Text style={[styles.columnHeader, {flex: 1, textAlign: 'center'}]}>
-            STOCK
+        {/* Grid Header */}
+        <View style={styles.gridHeader}>
+          <Text style={[styles.headerLabel, styles.colMain]}>PRODUCT</Text>
+          <Text
+            style={[
+              styles.headerLabel,
+              styles.colStock,
+              {textAlign: 'center'},
+            ]}>
+            STATUS
           </Text>
-          <Text style={[styles.columnHeader, {flex: 1, textAlign: 'right'}]}>
+          <Text
+            style={[styles.headerLabel, styles.colPrice, {textAlign: 'right'}]}>
             PRICE
           </Text>
+          <Text
+            style={[
+              styles.headerLabel,
+              styles.colAction,
+              {textAlign: 'right'},
+            ]}></Text>
         </View>
 
         {loading && !refreshing ? (
           <ActivityIndicator
             size="large"
-            color={color.black}
-            style={{marginTop: 50}}
+            color="#000"
+            style={{marginTop: 40}}
           />
         ) : (
           <FlatList
@@ -137,15 +169,16 @@ export default function ProductListScreen({navigation}: any) {
               />
             }
             ListEmptyComponent={
-              <Text style={styles.emptyText}>No products found</Text>
+              <Text style={styles.emptyText}>No matching products</Text>
             }
-            contentContainerStyle={{paddingBottom: 20}}
           />
         )}
-        <ProductBarcodeCard
-          isVisible={showCodeModal}
-          onClose={() => setShowCodeModal(false)}
+
+        <ProductFormModal
+          isVisible={modalVisible}
           product={selectedProduct}
+          onClose={() => setModalVisible(false)}
+          onSuccess={() => loadProducts(false)}
         />
       </View>
     </MainLayout>
@@ -153,75 +186,106 @@ export default function ProductListScreen({navigation}: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#fff'},
+  container: {flex: 1, backgroundColor: '#f8fafc'},
 
-  // Search & Add
-  searchContainer: {
+  // Search Area
+  topBar: {
     flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    backgroundColor: swiggyColors.background,
-  },
-  searchInput: {
-    flex: 1,
+    padding: 12,
     backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 48,
-    fontSize: 14,
-  },
-  addButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: color.black,
-    borderRadius: 12,
-    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
     alignItems: 'center',
-    elevation: 2,
+    gap: 10,
   },
-  addButtonText: {color: '#fff', fontSize: 28, fontWeight: '300'},
+  searchWrapper: {flex: 1},
+  searchInput: {
+    height: 40,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  addBtn: {
+    backgroundColor: '#0f172a',
+    paddingHorizontal: 16,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  addBtnText: {color: '#fff', fontSize: 12, fontWeight: '800'},
 
-  // Table
-  tableHeader: {
+  // Grid Header
+  gridHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 2,
+    borderBottomColor: '#e2e8f0',
+  },
+  headerLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#64748b',
+    letterSpacing: 1,
+  },
+
+  // Row Styles
+  rowContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#f1f5f9',
-    borderBottomWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  columnHeader: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748b',
-    letterSpacing: 0.5,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
+  },
+  rowAlternate: {backgroundColor: '#f8fafc'},
+
+  // Columns Widths
+  colMain: {flex: 2.5},
+  colStock: {flex: 1.5, alignItems: 'center'},
+  colPrice: {flex: 1.2, alignItems: 'flex-end'},
+  colAction: {flex: 0.8, alignItems: 'flex-end'},
+
+  // Typography
+  primaryText: {fontSize: 14, fontWeight: '600', color: '#1e293b'},
+  secondaryText: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  priceText: {fontSize: 14, fontWeight: '700', color: '#0f172a'},
+
+  // Status Badges
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    minWidth: 70,
     alignItems: 'center',
   },
+  badgeOk: {backgroundColor: '#dcfce7'},
+  badgeLow: {backgroundColor: '#fee2e2'},
+  badgeText: {fontSize: 10, fontWeight: '800'},
+  textOk: {color: '#166534'},
+  textLow: {color: '#991b1b'},
 
-  // Cells
-  cellName: {fontSize: 14, fontWeight: '700', color: '#1e293b'},
-  cellBarcode: {fontSize: 11, color: '#94a3b8', marginTop: 2},
-  cellStock: {fontSize: 14, fontWeight: '600', color: '#1e293b'},
-  lowStockLabel: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: '#ef4444',
-    marginTop: 2,
+  // Actions
+  editActionText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#2563eb',
   },
-  cellPrice: {fontSize: 15, fontWeight: '800', color: color.black},
 
   emptyText: {
     textAlign: 'center',
-    marginTop: 50,
+    marginTop: 40,
     color: '#94a3b8',
     fontSize: 14,
   },

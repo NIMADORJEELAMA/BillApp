@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   StyleSheet,
   View,
@@ -9,31 +9,63 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
-import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
-import color from '../../assets/Color/color';
-
 import ProductQrCodeCard from './ProductQrCodeCard';
-export default function ProductScreen({navigation}: any) {
+
+interface ProductFormModalProps {
+  isVisible: boolean;
+  onClose: () => void;
+  onSuccess: () => void; // To refresh the list in the parent
+  product?: any; // If provided, we are in EDIT mode
+}
+
+export default function ProductFormModal({
+  isVisible,
+  onClose,
+  onSuccess,
+  product,
+}: ProductFormModalProps) {
   const [loading, setLoading] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [createdProduct, setCreatedProduct] = useState<any>(null);
-  const [form, setForm] = useState({
+
+  const initialForm = {
     name: '',
     price: '',
     costPrice: '',
     barcode: '',
     stockQty: '',
-    unit: 'KG', // Default unit
-  });
+    unit: 'KG',
+  };
+
+  const [form, setForm] = useState(initialForm);
+
+  // Sync form when modal opens or product changes
+  useEffect(() => {
+    if (isVisible) {
+      if (product) {
+        setForm({
+          name: product.name || '',
+          price: product.price?.toString() || '',
+          costPrice: product.costPrice?.toString() || '',
+          barcode: product.barcode || '',
+          stockQty: product.stockQty?.toString() || '',
+          unit: product.unit || 'KG',
+        });
+      } else {
+        setForm(initialForm);
+      }
+    }
+  }, [isVisible, product]);
 
   const handleInputChange = (field: string, value: string) => {
     setForm(prev => ({...prev, [field]: value}));
   };
 
-  const handleCreate = async (shouldPrint: boolean = false) => {
+  const handleSave = async (shouldPrint: boolean = false) => {
     if (!form.name || !form.price || !form.stockQty) {
       Toast.show({type: 'error', text1: 'Please fill all required fields'});
       return;
@@ -48,27 +80,36 @@ export default function ProductScreen({navigation}: any) {
         stockQty: parseInt(form.stockQty, 10),
       };
 
-      const response = await axiosInstance.post('/products', payload);
-      const productData = response.data; // Assuming your backend returns the created object
+      let response;
+      if (product?._id) {
+        // EDIT MODE
+        response = await axiosInstance.put(`/products/${product._id}`, payload);
+      } else {
+        // CREATE MODE
+        response = await axiosInstance.post('/products', payload);
+      }
 
-      Toast.show({type: 'success', text1: 'Product created successfully!'});
+      const savedData = response.data;
+      Toast.show({
+        type: 'success',
+        text1: product ? 'Product updated!' : 'Product created!',
+      });
 
       if (shouldPrint) {
-        // Instead of navigating back, save the data and show the modal
         setCreatedProduct({
           name: form.name,
           price: form.price,
-          barcode: form.barcode || productData.barcode, // Fallback to server ID/barcode if exists
+          barcode: form.barcode || savedData.barcode,
         });
         setShowPrintModal(true);
       } else {
-        navigation.goBack();
+        onSuccess();
+        onClose();
       }
     } catch (error: any) {
-      console.error(error);
       Toast.show({
         type: 'error',
-        text1: 'Failed to create product',
+        text1: 'Save failed',
         text2: error.response?.data?.message || 'Server Error',
       });
     } finally {
@@ -76,40 +117,17 @@ export default function ProductScreen({navigation}: any) {
     }
   };
 
-  // const handleCreate = async () => {
-  //   // Basic Validation
-  //   if (!form.name || !form.price || !form.stockQty) {
-  //     Toast.show({type: 'error', text1: 'Please fill all required fields'});
-  //     return;
-  //   }
-
-  //   setLoading(true);
-  //   try {
-  //     const payload = {
-  //       ...form,
-  //       price: parseFloat(form.price),
-  //       costPrice: parseFloat(form.costPrice) || 0,
-  //       stockQty: parseInt(form.stockQty, 10),
-  //     };
-
-  //     await axiosInstance.post('/products', payload);
-
-  //     Toast.show({type: 'success', text1: 'Product created successfully!'});
-  //     navigation.goBack(); // Return to list
-  //   } catch (error: any) {
-  //     console.error(error);
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Failed to create product',
-  //       text2: error.response?.data?.message || 'Server Error',
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   return (
-    <MainLayout title="Add New Product" showBack>
+    <Modal visible={isVisible} animationType="slide" onRequestClose={onClose}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+          {product ? 'Edit Product' : 'Add New Product'}
+        </Text>
+        <TouchableOpacity onPress={onClose}>
+          <Text style={styles.closeX}>✕</Text>
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{flex: 1}}>
@@ -160,7 +178,7 @@ export default function ProductScreen({navigation}: any) {
 
           <View style={styles.row}>
             <View style={[styles.inputGroup, {flex: 1}]}>
-              <Text style={styles.label}>Initial Stock *</Text>
+              <Text style={styles.label}>Stock Quantity *</Text>
               <TextInput
                 style={styles.input}
                 placeholder="100"
@@ -170,7 +188,7 @@ export default function ProductScreen({navigation}: any) {
               />
             </View>
             <View style={[styles.inputGroup, {flex: 1, marginLeft: 12}]}>
-              <Text style={styles.label}>Unit (e.g. KG, PCS)</Text>
+              <Text style={styles.label}>Unit</Text>
               <TextInput
                 style={styles.input}
                 placeholder="KG"
@@ -182,49 +200,63 @@ export default function ProductScreen({navigation}: any) {
           </View>
 
           <View style={styles.buttonContainer}>
-            {/* Button 1: Just Create */}
             <TouchableOpacity
-              style={[
-                styles.submitButton,
-                {backgroundColor: '#64748b'},
-                loading && {opacity: 0.7},
-              ]}
-              onPress={() => handleCreate(false)}
+              style={[styles.submitButton, {backgroundColor: '#64748b'}]}
+              onPress={() => handleSave(false)}
               disabled={loading}>
-              <Text style={styles.submitText}>JUST CREATE</Text>
+              <Text style={styles.submitText}>
+                {product ? 'UPDATE ONLY' : 'JUST CREATE'}
+              </Text>
             </TouchableOpacity>
 
-            {/* Button 2: Create & Print */}
             <TouchableOpacity
-              style={[
-                styles.submitButton,
-                {backgroundColor: '#2563eb'},
-                loading && {opacity: 0.7},
-              ]}
-              onPress={() => handleCreate(true)}
+              style={[styles.submitButton, {backgroundColor: '#2563eb'}]}
+              onPress={() => handleSave(true)}
               disabled={loading}>
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.submitText}>CREATE & PRINT QR</Text>
+                <Text style={styles.submitText}>SAVE & PRINT QR</Text>
               )}
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
       <ProductQrCodeCard
         isVisible={showPrintModal}
         product={createdProduct}
         onClose={() => {
           setShowPrintModal(false);
-          navigation.goBack(); // Navigate back after they close the print modal
+          onSuccess();
+          onClose();
         }}
       />
-    </MainLayout>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginTop: Platform.OS === 'ios' ? 40 : 0,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e293b',
+  },
+  closeX: {
+    fontSize: 20,
+    color: '#64748b',
+    padding: 5,
+  },
   container: {
     padding: 20,
     backgroundColor: '#fff',
@@ -252,16 +284,14 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
   },
-
   buttonContainer: {
     marginTop: 20,
-    gap: 12, // Space between buttons
+    gap: 12,
   },
   submitButton: {
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    elevation: 2,
   },
   submitText: {
     color: '#fff',
