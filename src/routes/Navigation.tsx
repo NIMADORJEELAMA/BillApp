@@ -63,6 +63,7 @@ import CreateProductScreen from '../screens/ProductScreen';
 import ProductScreen from '../screens/ProductScreen';
 import ProductListScreen from '../screens/ProductScreen/ProductListScreen';
 import SalesScreen from '../screens/SalesScreen';
+import SalesListScreen from '../screens/SalesScreen/SalesListScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -155,7 +156,7 @@ const TabNavigator: React.FC = () => {
       {role !== 'KITCHEN' && (
         <Tab.Screen
           name="HomeScreen"
-          component={HomeScreen}
+          component={SalesListScreen}
           options={{
             headerShown: false,
             tabBarButton: (props: any) => {
@@ -227,7 +228,7 @@ const TabNavigator: React.FC = () => {
               return (
                 <AnimatedTabButton
                   {...props}
-                  label="PrinterSettings"
+                  label="Printer"
                   icon={
                     <PrinterIcon
                       height={22}
@@ -278,37 +279,7 @@ const TabNavigator: React.FC = () => {
           }}
         />
       )}
-      {role == 'ADMIN' && (
-        <Tab.Screen
-          name="ProductScreen"
-          component={ProductScreen}
-          options={{
-            headerShown: false,
-            tabBarButton: (props: any) => {
-              // Check if the tab is currently selected
-              const isSelected = props?.accessibilityState?.selected;
 
-              return (
-                <AnimatedTabButton
-                  {...props}
-                  label="Product"
-                  icon={
-                    <CashIcon
-                      height={22}
-                      width={22}
-                      fill={isSelected ? '#000000' : 'gray'}
-                      stroke={isSelected ? '#000000' : 'gray'}
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  }
-                />
-              );
-            },
-          }}
-        />
-      )}
       {role == 'ADMIN' && (
         <Tab.Screen
           name="ProductListScreen"

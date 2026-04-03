@@ -17,6 +17,8 @@ import {
   useCameraDevices,
   useCodeScanner,
 } from 'react-native-vision-camera';
+// Import the service at the top
+import {connectAndPrint} from '../../services/PrinterService';
 import {useDispatch, useSelector} from 'react-redux';
 import {addToCart, updateQty, clearCart} from '../../redux/slices/cartSlice'; // Ensure this path is correct
 import MainLayout from '../../../src/screens/MainLayout';
@@ -151,6 +153,7 @@ export default function SalesScreen() {
   );
   const finalAmount = subtotal - (parseFloat(discount.toString()) || 0);
 
+  // Inside SalesScreen component...
   const handleCheckout = async () => {
     setLoading(true);
     try {
@@ -166,9 +169,25 @@ export default function SalesScreen() {
           price: i.price,
         })),
       };
-      await axiosInstance.post('/sales', payload);
-      Toast.show({type: 'success', text1: 'Sale Record Created'});
-      dispatch(clearCart());
+
+      const response = await axiosInstance.post('/sales', payload);
+
+      if (response.status === 201 || response.status === 200) {
+        Toast.show({type: 'success', text1: 'Sale Record Created'});
+
+        // --- START PRINTING ---
+        try {
+          await connectAndPrint(cart, subtotal, discount, finalAmount);
+        } catch (printError) {
+          Alert.alert(
+            'Printer Error',
+            'Sale saved, but failed to print receipt.',
+          );
+        }
+        // --- END PRINTING ---
+
+        dispatch(clearCart());
+      }
     } catch (e) {
       Toast.show({type: 'error', text1: 'Checkout failed'});
     } finally {
