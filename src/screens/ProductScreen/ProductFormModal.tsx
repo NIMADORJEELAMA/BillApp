@@ -32,6 +32,16 @@ export default function ProductFormModal({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [createdProduct, setCreatedProduct] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const [form, setForm] = useState({
+    name: '',
+    price: '',
+    costPrice: '',
+    barcode: '',
+    stockQty: '',
+    unit: 'KG',
+    categoryId: '',
+  });
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
@@ -51,12 +61,15 @@ export default function ProductFormModal({
   const filteredCategories = categories.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-
   const handleSelectCategory = (cat: any) => {
+    setSelectedCategory(cat);
     setForm(prev => ({...prev, categoryId: cat.id}));
     setSearchQuery(cat.name);
     setIsDropdownVisible(false);
   };
+  const isCreatingNewCategory =
+    searchQuery.length > 0 &&
+    !categories.some(c => c.name.toLowerCase() === searchQuery.toLowerCase());
 
   const handleCreateNewCategory = () => {
     // Logic: categoryId remains null/empty, but we'll use searchQuery as the new name
@@ -64,75 +77,127 @@ export default function ProductFormModal({
     setIsDropdownVisible(false);
   };
 
-  const initialForm = {
-    name: '',
-    price: '',
-    costPrice: '',
-    barcode: '',
-    stockQty: '',
-    unit: 'KG',
-    categoryId: '',
-  };
-
-  const [form, setForm] = useState(initialForm);
-
-  // Sync form when modal opens or product changes
   useEffect(() => {
-    if (isVisible) {
-      if (product) {
-        setForm({
-          name: product.name || '',
-          price: product.price?.toString() || '',
-          costPrice: product.costPrice?.toString() || '',
-          barcode: product.barcode || '',
-          stockQty: product.stockQty?.toString() || '',
-          unit: product.unit || 'KG',
-          categoryId: product.categoryId || '',
-        });
-      } else {
-        setForm(initialForm);
-      }
-    }
-  }, [isVisible, product]);
+    if (!isVisible) return;
 
+    if (product) {
+      setForm({
+        name: product.name || '',
+        price: product.price?.toString() || '',
+        costPrice: product.costPrice?.toString() || '',
+        barcode: product.barcode || '',
+        stockQty: product.stockQty?.toString() || '',
+        unit: product.unit || 'KG',
+        categoryId: product.categoryId || '',
+      });
+
+      // ✅ SAFE CATEGORY HANDLING
+      if (product.categoryId && categories.length > 0) {
+        const existingCat = categories.find(c => c.id === product.categoryId);
+
+        if (existingCat) {
+          setSelectedCategory(existingCat);
+          setSearchQuery(existingCat.name);
+        } else {
+          // 🚨 IMPORTANT FIX
+          setSelectedCategory(null);
+          setSearchQuery(''); // DO NOT fallback
+        }
+      } else {
+        // 🚨 NO CATEGORY CASE
+        setSelectedCategory(null);
+        setSearchQuery('');
+      }
+    } else {
+      // CREATE MODE RESET
+      setForm({
+        name: '',
+        price: '',
+        costPrice: '',
+        barcode: '',
+        stockQty: '',
+        unit: 'KG',
+        categoryId: '',
+      });
+
+      setSelectedCategory(null);
+      setSearchQuery('');
+    }
+  }, [isVisible, product, categories]);
   const handleInputChange = (field: string, value: string) => {
     setForm(prev => ({...prev, [field]: value}));
   };
+  const generateBarcode = () => {
+    // 1. Get prefix from name (first 3 chars) or default to 'PRD'
+    const prefix = form.name
+      ? form.name.substring(0, 3).toUpperCase().replace(/\s/g, 'X')
+      : 'PRD';
+
+    // 2. Generate a unique 5-character suffix
+    const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
+
+    const newBarcode = `${prefix}-${randomStr}`;
+
+    handleInputChange('barcode', newBarcode);
+  };
   const handleSave = async (shouldPrint: boolean = false) => {
+    if (!form.name || !form.price || !form.stockQty) {
+      Toast.show({type: 'error', text1: 'Please fill required fields'});
+      return;
+    }
+
     setLoading(true);
     try {
       let finalCategoryId = form.categoryId;
 
-      // 1. If it's a new category, create it first
-      if (form.categoryId === 'NEW_CATEGORY') {
+      // ✅ Create category if needed
+      if (!selectedCategory && isCreatingNewCategory) {
         const catRes = await axiosInstance.post('/categories', {
-          name: searchQuery,
+          name: searchQuery.trim(),
         });
         finalCategoryId = catRes.data.id;
       }
 
-      // 2. Prepare Payload
       const payload = {
         ...form,
-        categoryId: finalCategoryId,
+        categoryId: finalCategoryId || null,
         price: parseFloat(form.price),
         costPrice: parseFloat(form.costPrice) || 0,
         stockQty: parseInt(form.stockQty, 10),
       };
 
-      // Remove the temporary flag if it exists
-      delete (payload as any).NEW_CATEGORY;
-
       let response;
+
       if (product?._id) {
         response = await axiosInstance.put(`/products/${product._id}`, payload);
       } else {
         response = await axiosInstance.post('/products', payload);
       }
 
-      // ... rest of success logic (Toast, Modal, etc.)
-    } catch (error) {
-      // ... error handling
+      const savedData = response.data;
+
+      Toast.show({
+        type: 'success',
+        text1: product ? 'Product updated!' : 'Product created!',
+      });
+
+      if (shouldPrint) {
+        setCreatedProduct({
+          name: payload.name,
+          price: payload.price,
+          barcode: savedData.barcode || payload.barcode,
+        });
+        setShowPrintModal(true);
+      } else {
+        onSuccess();
+        onClose();
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Save failed',
+        text2: error.response?.data?.message || 'Server error',
+      });
     } finally {
       setLoading(false);
     }
@@ -240,61 +305,19 @@ export default function ProductFormModal({
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Barcode / SKU</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="APP-001"
-                autoCapitalize="characters"
-                value={form.barcode}
-                onChangeText={v => handleInputChange('barcode', v)}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Category *</Text>
-              <View style={styles.dropdownContainer}>
+              <View style={styles.barcodeRow}>
                 <TextInput
-                  style={styles.input}
-                  placeholder="Search or type new category..."
-                  value={searchQuery}
-                  onFocus={() => setIsDropdownVisible(true)}
-                  onChangeText={text => {
-                    setSearchQuery(text);
-                    setIsDropdownVisible(true);
-                    // If user clears text, reset selection
-                    if (!text) setForm(prev => ({...prev, categoryId: ''}));
-                  }}
+                  style={[styles.input, {flex: 1}]}
+                  placeholder="e.g. ITM-X82J91"
+                  autoCapitalize="characters"
+                  value={form.barcode}
+                  onChangeText={v => handleInputChange('barcode', v)}
                 />
-
-                {isDropdownVisible && (
-                  <View style={styles.dropdownList}>
-                    <ScrollView nestedScrollEnabled style={{maxHeight: 200}}>
-                      {filteredCategories.map(cat => (
-                        <TouchableOpacity
-                          key={cat.id}
-                          style={styles.dropdownItem}
-                          onPress={() => handleSelectCategory(cat)}>
-                          <Text style={styles.dropdownItemText}>
-                            {cat.name}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-
-                      {/* If no exact match found, show "Create New" */}
-                      {searchQuery.length > 0 &&
-                        !categories.some(
-                          c =>
-                            c.name.toLowerCase() === searchQuery.toLowerCase(),
-                        ) && (
-                          <TouchableOpacity
-                            style={[styles.dropdownItem, styles.createItem]}
-                            onPress={handleCreateNewCategory}>
-                            <Text style={styles.createItemText}>
-                              + Create "{searchQuery}"
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                    </ScrollView>
-                  </View>
-                )}
+                <TouchableOpacity
+                  style={styles.generateButton}
+                  onPress={generateBarcode}>
+                  <Text style={styles.generateButtonText}>GENERATE</Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -319,6 +342,59 @@ export default function ProductFormModal({
                   onChangeText={v => handleInputChange('unit', v)}
                 />
               </View>
+            </View>
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.label}>Category</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Search or create category..."
+                value={searchQuery}
+                onFocus={() => setIsDropdownVisible(true)}
+                onChangeText={text => {
+                  setSearchQuery(text);
+                  setSelectedCategory(null);
+                  setForm(prev => ({...prev, categoryId: ''}));
+                  setIsDropdownVisible(true);
+                }}
+              />
+
+              {isDropdownVisible && (
+                <View style={styles.dropdownList}>
+                  <ScrollView nestedScrollEnabled style={{maxHeight: 220}}>
+                    {filteredCategories.length > 0 ? (
+                      filteredCategories.map(cat => (
+                        <TouchableOpacity
+                          key={cat.id}
+                          style={[
+                            styles.dropdownItem,
+                            selectedCategory?.id === cat.id && {
+                              backgroundColor: '#e0f2fe',
+                            },
+                          ]}
+                          onPress={() => handleSelectCategory(cat)}>
+                          <Text style={styles.dropdownItemText}>
+                            {cat.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <Text style={styles.noResultText}>
+                        No categories found
+                      </Text>
+                    )}
+
+                    {isCreatingNewCategory && (
+                      <TouchableOpacity
+                        style={[styles.dropdownItem, styles.createItem]}
+                        onPress={() => setIsDropdownVisible(false)}>
+                        <Text style={styles.createItemText}>
+                          + Create "{searchQuery}"
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </ScrollView>
+                </View>
+              )}
             </View>
 
             <View style={styles.buttonContainer}>
@@ -385,6 +461,25 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
+  barcodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  generateButton: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    justifyContent: 'center',
+  },
+  generateButtonText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#2563eb', // Blue to indicate action
+  },
   inputGroup: {
     marginBottom: 18,
   },
@@ -450,6 +545,7 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     zIndex: 1000, // Important for iOS to show over other inputs
+    marginBottom: 18,
   },
   dropdownList: {
     position: 'absolute',
@@ -475,6 +571,12 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 14,
     color: '#1e293b',
+  },
+  noResultText: {
+    padding: 14,
+    textAlign: 'center',
+    color: '#94a3b8',
+    fontSize: 13,
   },
   createItem: {
     backgroundColor: '#f8fafc',

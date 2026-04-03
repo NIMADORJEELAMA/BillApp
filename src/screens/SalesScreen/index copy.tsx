@@ -8,9 +8,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  Modal,
-  TextInput,
 } from 'react-native';
 import {
   Camera,
@@ -39,50 +36,7 @@ export default function SalesScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const lastScannedCode = useRef<string | null>(null);
   const lastScanTime = useRef<number>(0);
-  const [qtyModalVisible, setQtyModalVisible] = useState(false);
-  const [tempQty, setTempQty] = useState('');
-  const [activeProductId, setActiveProductId] = useState<string | null>(null);
 
-  const openQtyModal = (productId: string, currentQty: number) => {
-    setActiveProductId(productId);
-    setTempQty(currentQty.toString());
-    setQtyModalVisible(true);
-  };
-
-  const submitManualQty = () => {
-    const newQty = parseInt(tempQty || '0', 10);
-    if (!isNaN(newQty) && activeProductId) {
-      const currentItem = cart.find(
-        (i: any) => i.productId === activeProductId,
-      );
-      const delta = newQty - (currentItem?.quantity || 0);
-      dispatch(updateQty({id: activeProductId, delta}));
-    }
-    setQtyModalVisible(false);
-  };
-  const handleManualQty = (productId: string, currentQty: number) => {
-    Alert.prompt(
-      'Set Quantity',
-      'Enter the total quantity for this item:',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'OK',
-          onPress: value => {
-            const newQty = parseInt(value || '0', 10);
-            if (!isNaN(newQty) && newQty >= 0) {
-              // Calculate delta to reach the target number
-              const delta = newQty - currentQty;
-              dispatch(updateQty({id: productId, delta}));
-            }
-          },
-        },
-      ],
-      'plain-text',
-      currentQty.toString(),
-      'number-pad',
-    );
-  };
   useEffect(() => {
     (async () => {
       const status = await Camera.requestCameraPermission();
@@ -181,42 +135,9 @@ export default function SalesScreen() {
 
   return (
     <MainLayout title="POS Terminal" showBack>
-      <Modal visible={qtyModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.qtyModalContent}>
-            <Text style={styles.modalTitle}>Set Quantity</Text>
-            <TextInput
-              style={styles.qtyInput}
-              keyboardType="number-pad"
-              value={tempQty}
-              onChangeText={setTempQty}
-              autoFocus
-              selectTextOnFocus
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalBtn, {backgroundColor: '#e2e8f0'}]}
-                onPress={() => setQtyModalVisible(false)}>
-                <Text style={{color: '#475569', fontWeight: 'bold'}}>
-                  CANCEL
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, {backgroundColor: '#000'}]}
-                onPress={submitManualQty}>
-                <Text style={{color: '#fff', fontWeight: 'bold'}}>UPDATE</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
       <View style={styles.container}>
         {/* CAMERA SECTION (25% Height) */}
-        <View
-          style={[
-            styles.cameraContainer,
-            !isCameraVisible && styles.cameraClosed, // Dynamic styling
-          ]}>
+        <View style={styles.cameraContainer}>
           {isCameraVisible ? (
             <>
               {device && hasPermission ? (
@@ -229,11 +150,13 @@ export default function SalesScreen() {
               ) : (
                 <ActivityIndicator color="#fff" style={{flex: 1}} />
               )}
+
+              {/* Scan UI Overlays */}
               <View style={styles.scanLine} />
               <TouchableOpacity
                 style={styles.closeCameraButton}
                 onPress={() => setIsCameraVisible(false)}>
-                <Text style={styles.closeCameraText}>✕ CLOSE SCANNER</Text>
+                <Text style={styles.closeCameraText}>✕ CLOSE CAMERA</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -254,6 +177,11 @@ export default function SalesScreen() {
 
         {/* CART LIST SECTION */}
         <View style={styles.cartSection}>
+          <View style={styles.cartHeader}>
+            <Text style={styles.cartTitle}>Current Items</Text>
+            <Text style={styles.itemCount}>{cart.length} unique items</Text>
+          </View>
+
           <FlatList
             data={cart}
             keyExtractor={item => item.productId}
@@ -264,11 +192,10 @@ export default function SalesScreen() {
                     {item.name}
                   </Text>
                   <Text style={styles.itemSubText}>
-                    ₹{item.price.toFixed(2)}
+                    ₹{item.price.toFixed(2)} / unit
                   </Text>
                 </View>
 
-                {/* IMPROVED QTY CONTROLS */}
                 <View style={styles.qtyContainer}>
                   <TouchableOpacity
                     onPress={() =>
@@ -277,17 +204,10 @@ export default function SalesScreen() {
                     style={styles.qtyBtn}>
                     <Text style={styles.qtyBtnText}>−</Text>
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onLongPress={() =>
-                      openQtyModal(item.productId, item.quantity)
-                    }
-                    style={styles.qtyNumberBox}>
-                    <Text style={styles.qtyText}>{item.quantity}</Text>
-                  </TouchableOpacity>
+                  <Text style={styles.qtyText}>{item.quantity}</Text>
                   <TouchableOpacity
                     onPress={() =>
-                      dispatch(updateQty({id: item.productId, delta: +1}))
+                      dispatch(updateQty({id: item.productId, delta: 1}))
                     }
                     style={styles.qtyBtn}>
                     <Text style={styles.qtyBtnText}>+</Text>
@@ -356,17 +276,13 @@ export default function SalesScreen() {
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#f8fafc'},
 
+  // Camera Styles
   cameraContainer: {
-    height: '25%', // Visible height
+    height: '25%',
     backgroundColor: '#1e293b',
     overflow: 'hidden',
     position: 'relative',
-  },
-  cameraClosed: {
-    height: 50, // Minimal height when closed
-    backgroundColor: '#f1f5f9',
-    borderBottomWidth: 1,
-    borderColor: '#e2e8f0',
+    justifyContent: 'center',
   },
   scanLine: {
     position: 'absolute',
@@ -415,40 +331,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.5,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  qtyModalContent: {
-    width: 280,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    elevation: 10,
-  },
-  modalTitle: {fontSize: 16, fontWeight: 'bold', marginBottom: 15},
-  qtyInput: {
-    width: '100%',
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#000',
-  },
-  modalButtons: {flexDirection: 'row', gap: 10},
-  modalBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
   // Cart Styles
   cartSection: {flex: 1, paddingHorizontal: 16, paddingTop: 16},
   cartHeader: {
@@ -476,27 +358,13 @@ const styles = StyleSheet.create({
   qtyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f8fafc',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     marginHorizontal: 10,
-    overflow: 'hidden',
   },
-  qtyDisplay: {
-    paddingHorizontal: 12,
-    backgroundColor: '#f8fafc',
-    height: '100%',
-    justifyContent: 'center',
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  qtyBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-  },
+  qtyBtn: {padding: 6, paddingHorizontal: 10},
   qtyBtnText: {fontWeight: 'bold', fontSize: 16, color: '#000'},
   qtyText: {fontWeight: '800', minWidth: 20, textAlign: 'center', fontSize: 14},
   itemTotal: {

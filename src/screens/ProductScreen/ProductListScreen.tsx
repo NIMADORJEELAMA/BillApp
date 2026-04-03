@@ -21,6 +21,7 @@ export default function ProductListScreen({navigation}: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
+  console.log('products', products);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
