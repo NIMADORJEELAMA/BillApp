@@ -50,6 +50,8 @@ const PrinterSettings = () => {
     try {
       setLoading(true);
       // Initialize again just to be safe
+      // Initialize again just to be safe
+
       await BLEPrinter.init();
       await BLEPrinter.connectPrinter(printer.inner_mac_address);
 
