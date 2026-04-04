@@ -64,10 +64,6 @@ const ModernHomeScreen = () => {
       {/* ANIMATED HEADER */}
       <Animated.View style={[styles.header, headerAnimatedStyle]}>
         <Animated.View style={[styles.headerContent, contentOpacity]}>
-          {/* Your Jio-style Balance/User info here */}
-          {/* Your Jio-style Balance/User info here */}
-          {/* Your Jio-style Balance/User info here */}
-
           <View style={styles.balanceCard} />
         </Animated.View>
 
