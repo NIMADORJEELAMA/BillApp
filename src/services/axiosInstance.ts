@@ -7,7 +7,7 @@ import store from '../redux/store'; // Import your actual store file
 
 export const STAGING_URL = 'https://api-staging.hilltoptourism.in';
 export const PRODUCTION_URL = 'https://api.hilltoptourism.in';
-export const LOCAL_IP = '192.168.1.9';
+export const LOCAL_IP = '192.168.1.5';
 // const BASE_URL = 'http://localhost:3000';
 
 const USE_PRODUCTION = true;

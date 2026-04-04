@@ -64,6 +64,7 @@ import ProductScreen from '../screens/ProductScreen';
 import ProductListScreen from '../screens/ProductScreen/ProductListScreen';
 import SalesScreen from '../screens/SalesScreen';
 import SalesListScreen from '../screens/SalesScreen/SalesListScreen';
+import ModernHomeScreen from '../screens/ModernHomeScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -113,6 +114,7 @@ export type BottomTabParamList = {
   ProfileScreen: undefined;
   Settings: undefined;
   Profile: undefined;
+  ModernHomeScreen: undefined;
 };
 export type TabBarButtonList = {
   TouchableOpacity: undefined;
@@ -167,6 +169,37 @@ const TabNavigator: React.FC = () => {
                 <AnimatedTabButton
                   {...props}
                   label="Home"
+                  icon={
+                    <HomeIcon
+                      height={20}
+                      width={20}
+                      fill={isSelected ? '#000000' : 'gray'}
+                      stroke={isSelected ? '#000000' : 'gray'}
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  }
+                />
+              );
+            },
+          }}
+        />
+      )}
+      {role !== 'KITCHEN' && (
+        <Tab.Screen
+          name="ModernHomeScreen"
+          component={ModernHomeScreen}
+          options={{
+            headerShown: false,
+            tabBarButton: (props: any) => {
+              // Check if the tab is currently selected
+              const isSelected = props?.accessibilityState?.selected;
+
+              return (
+                <AnimatedTabButton
+                  {...props}
+                  label="Home 2.0 "
                   icon={
                     <HomeIcon
                       height={20}
