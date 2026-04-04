@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, View, Dimensions, Platform, TextInput} from 'react-native';
+import {StyleSheet, View, Dimensions, Platform} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,118 +7,107 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-
 import ButtonPreferences from '../../components/ButtonPreferences';
-import GridItem from '../../components/GridItem';
-
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../routes/navigation';
-
 import ArrowRight from '../../assets/Icons/right-arrrow.svg';
 import Help from '../../assets/Icons/help.svg';
 import Filter from '../../assets/Icons/filter-svgrepo-com.svg';
+
 import Setting from '../../assets/Icons/settings.svg';
+
 import Star from '../../assets/Icons/star-svgrepo-com.svg';
 import Incognito from '../../assets/Icons/incognito-svgrepo-com.svg';
+
 import Plane from '../../assets/Icons/plane-svgrepo-com.svg';
+import GridItem from '../../components/GridItem';
 
 const {width} = Dimensions.get('window');
-
-/* 🔥 HEIGHT CONFIG */
-const SEARCH_BAR_HEIGHT = 70;
-const COLLAPSIBLE_HEIGHT = 130;
-const COLLAPSED_HEIGHT = 0;
-
-const SCROLL_DISTANCE = COLLAPSIBLE_HEIGHT;
+const HEADER_MAX_HEIGHT = 200;
+const HEADER_MIN_HEIGHT = 90;
+const SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
 const ModernHomeScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
   const scrollY = useSharedValue(0);
 
-  /* 🔥 Scroll Handler */
+  // Handle Scroll Event
   const scrollHandler = useAnimatedScrollHandler(event => {
     scrollY.value = event.contentOffset.y;
   });
 
-  /* 🔥 Collapsible Animation */
-  const collapsibleStyle = useAnimatedStyle(() => {
+  // Header Animation Styles
+  const headerAnimatedStyle = useAnimatedStyle(() => {
     const height = interpolate(
       scrollY.value,
       [0, SCROLL_DISTANCE],
-      [COLLAPSIBLE_HEIGHT, COLLAPSED_HEIGHT],
+      [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
       Extrapolate.CLAMP,
     );
+    return {height};
+  });
 
+  const contentOpacity = useAnimatedStyle(() => {
     const opacity = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE / 1.5],
+      [0, SCROLL_DISTANCE / 2],
       [1, 0],
       Extrapolate.CLAMP,
     );
-
-    return {
-      height,
-      opacity,
-    };
+    return {opacity};
   });
 
   return (
     <View style={styles.container}>
-      {/* 🔷 HEADER */}
-      <View style={styles.headerContainer}>
-        {/* 🔍 FIXED SEARCH BAR */}
-        <View style={styles.searchBarWrapper}>
-          <View style={styles.searchBar}>
-            <TextInput placeholder="Search..." placeholderTextColor="#999" />
-          </View>
-        </View>
+      {/* ANIMATED HEADER */}
+      {/* ANIMATED HEADER */}
 
-        {/* 📦 COLLAPSIBLE SECTION */}
-        <Animated.View style={[styles.collapsibleContainer, collapsibleStyle]}>
+      <Animated.View style={[styles.header, headerAnimatedStyle]}>
+        <Animated.View style={[styles.headerContent, contentOpacity]}>
           <View style={styles.balanceCard} />
         </Animated.View>
-      </View>
 
-      {/* 🔽 SCROLL CONTENT */}
+        {/* Sticky Search Bar area */}
+        <View style={styles.searchBarPlaceholder} />
+      </Animated.View>
+
+      {/* SCROLLABLE CONTENT */}
       <Animated.ScrollView
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        contentContainerStyle={{
-          paddingTop: SEARCH_BAR_HEIGHT + COLLAPSIBLE_HEIGHT + 10,
-          paddingBottom: 40,
-        }}>
+        contentContainerStyle={{paddingTop: HEADER_MAX_HEIGHT}}>
+        {/* Your Dynamic Sections (Carousels, Grids, Banners) */}
         <View style={styles.fakeContent} />
-
         <ButtonPreferences
           title="Staff"
           onPress={() => navigation.navigate('Staff')}
           LeftIcon={Filter}
           RightIcon={ArrowRight}
+          // rightLabel="Next"
+          // type="outline"
           iconColor={'#000'}
         />
-
         <ButtonPreferences
           title="Settings"
           onPress={() => navigation.navigate('Settings')}
           LeftIcon={Setting}
           RightIcon={ArrowRight}
+          // rightLabel="Next"
+          // type="outline"
           iconColor={'#000'}
         />
-
         <ButtonPreferences
           title="Help Center"
           onPress={() => navigation.navigate('HelpCenter')}
           LeftIcon={Help}
           RightIcon={ArrowRight}
+          // rightLabel="Next"
+          // type="outline"
           iconColor={'#000'}
         />
-
         <View style={styles.fakeContent} />
-
-        {/* GRID */}
         <View style={styles.gridContainer}>
           <GridItem
             label="Get Super Likes"
@@ -135,6 +124,7 @@ const ModernHomeScreen = () => {
           <GridItem
             label="Go Incognito"
             Icon={Incognito}
+            // iconBgColor="#81C784"
             labelColor="#c2bff6"
           />
           <GridItem
@@ -151,26 +141,23 @@ const ModernHomeScreen = () => {
 
 export default ModernHomeScreen;
 
-/* 🎨 STYLES */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: '#F8F9FB', // Soft off-white background
   },
-
-  /* 🔷 HEADER CONTAINER */
-  headerContainer: {
+  header: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0F52BA',
+    backgroundColor: '#0F52BA', // Jio-style primary blue
     zIndex: 1000,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 25 : 50,
+    justifyContent: 'flex-end',
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-
+    // Shadow for Android/iOS
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -183,34 +170,32 @@ const styles = StyleSheet.create({
       },
     }),
   },
-
-  /* 🔍 SEARCH BAR */
-  searchBarWrapper: {
-    height: SEARCH_BAR_HEIGHT,
-    justifyContent: 'center',
+  headerContent: {
+    position: 'absolute',
+    top: 60, // Adjust based on your Status Bar height
+    left: 20,
+    right: 20,
+    alignItems: 'center',
   },
-
-  searchBar: {
-    height: 45,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    justifyContent: 'center',
-  },
-
-  /* 📦 COLLAPSIBLE */
-  collapsibleContainer: {
-    overflow: 'hidden',
-  },
-
   balanceCard: {
-    height: COLLAPSIBLE_HEIGHT,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: '100%',
+    height: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Glassmorphism effect
     borderRadius: 16,
-    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 15,
   },
-
-  /* 📄 CONTENT */
+  searchBarPlaceholder: {
+    width: '100%',
+    height: 45,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 15, // Keeps it visible at the bottom of the header
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+  },
   fakeContent: {
     height: 250,
     width: width - 40,
@@ -218,20 +203,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderRadius: 20,
     marginTop: 20,
-
+    // Light shadow for cards
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
   },
-
-  /* GRID */
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginTop: 20,
+  scrollContent: {
+    paddingTop: HEADER_MAX_HEIGHT + 20, // Offset so first card isn't hidden
+    paddingBottom: 40,
   },
 });
