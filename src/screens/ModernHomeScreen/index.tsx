@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
 
-    zIndex: 1010, // 👈 BELOW EVERYTHING
+    zIndex: 1010, // 👈 BELOW EVERYTHINGsdf
     paddingHorizontal: 20,
     overflow: 'hidden',
     backgroundColor: 'red',
