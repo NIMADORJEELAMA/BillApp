@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleSheet, View, Dimensions, Platform, TextInput} from 'react-native';
+
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,54 +8,50 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-
 import ButtonPreferences from '../../components/ButtonPreferences';
-import GridItem from '../../components/GridItem';
-
 import {useNavigation} from '@react-navigation/native';
-import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import type {RootStackParamList} from '../../routes/navigation';
-
+import {RootStackParamList} from '../../routes/Navigation';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import ArrowRight from '../../assets/Icons/right-arrrow.svg';
 import Help from '../../assets/Icons/help.svg';
 import Filter from '../../assets/Icons/filter-svgrepo-com.svg';
+
 import Setting from '../../assets/Icons/settings.svg';
+
 import Star from '../../assets/Icons/star-svgrepo-com.svg';
 import Incognito from '../../assets/Icons/incognito-svgrepo-com.svg';
+
 import Plane from '../../assets/Icons/plane-svgrepo-com.svg';
 
 const {width} = Dimensions.get('window');
 
-/* 🔥 HEIGHT CONFIG */
-const SEARCH_BAR_HEIGHT = 70;
+/* 🔥 CONFIG */
 const COLLAPSIBLE_HEIGHT = 130;
-const COLLAPSED_HEIGHT = 0;
+const FIXED_HEADER_HEIGHT = 80;
+const STATUSBAR = Platform.OS === 'ios' ? 50 : 20;
 
-const SCROLL_DISTANCE = COLLAPSIBLE_HEIGHT;
+const TOTAL_HEADER_HEIGHT = FIXED_HEADER_HEIGHT + COLLAPSIBLE_HEIGHT;
 
 const ModernHomeScreen = () => {
+  const scrollY = useSharedValue(0);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  const scrollY = useSharedValue(0);
-
-  /* 🔥 Scroll Handler */
   const scrollHandler = useAnimatedScrollHandler(event => {
     scrollY.value = event.contentOffset.y;
   });
 
-  /* 🔥 Collapsible Animation */
+  /* 🔥 COLLAPSE ANIMATION */
   const collapsibleStyle = useAnimatedStyle(() => {
     const height = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE],
-      [COLLAPSIBLE_HEIGHT, COLLAPSED_HEIGHT],
+      [0, COLLAPSIBLE_HEIGHT],
+      [COLLAPSIBLE_HEIGHT, 0],
       Extrapolate.CLAMP,
     );
 
     const opacity = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE / 1.5],
+      [0, COLLAPSIBLE_HEIGHT / 2],
       [1, 0],
       Extrapolate.CLAMP,
     );
@@ -67,83 +64,37 @@ const ModernHomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* 🔷 HEADER */}
-      <View style={styles.headerContainer}>
-        {/* 🔍 FIXED SEARCH BAR */}
-        <View style={styles.searchBarWrapper}>
-          <View style={styles.searchBar}>
-            <TextInput placeholder="Search..." placeholderTextColor="#999" />
-          </View>
-        </View>
-
-        {/* 📦 COLLAPSIBLE SECTION */}
-        <Animated.View style={[styles.collapsibleContainer, collapsibleStyle]}>
-          <View style={styles.balanceCard} />
-        </Animated.View>
-      </View>
-
-      {/* 🔽 SCROLL CONTENT */}
-      <Animated.ScrollView
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-        contentContainerStyle={{
-          paddingTop: SEARCH_BAR_HEIGHT + COLLAPSIBLE_HEIGHT + 10,
-          paddingBottom: 40,
-        }}>
-        <View style={styles.fakeContent} />
-
-        <ButtonPreferences
-          title="Staff"
-          onPress={() => navigation.navigate('Staff')}
-          LeftIcon={Filter}
-          RightIcon={ArrowRight}
-          iconColor={'#000'}
-        />
-
-        <ButtonPreferences
-          title="Settings"
-          onPress={() => navigation.navigate('Settings')}
-          LeftIcon={Setting}
-          RightIcon={ArrowRight}
-          iconColor={'#000'}
-        />
-
+      {/* 🔴 SECTION 2: COLLAPSIBLE (BOTTOM LAYER) */}
+      <Animated.View style={[styles.collapsible, collapsibleStyle]}>
+        <View style={styles.balanceCard} />
         <ButtonPreferences
           title="Help Center"
           onPress={() => navigation.navigate('HelpCenter')}
           LeftIcon={Help}
           RightIcon={ArrowRight}
+          // rightLabel="Next"
+          // type="outline"
           iconColor={'#000'}
         />
+      </Animated.View>
 
-        <View style={styles.fakeContent} />
-
-        {/* GRID */}
-        <View style={styles.gridContainer}>
-          <GridItem
-            label="Get Super Likes"
-            Icon={Star}
-            iconBgColor="#FFD700"
-            labelColor="#FFD700"
-          />
-          <GridItem
-            label="Get Boosts"
-            Icon={Setting}
-            iconBgColor="#A61F69"
-            labelColor="#A61F69"
-          />
-          <GridItem
-            label="Go Incognito"
-            Icon={Incognito}
-            labelColor="#c2bff6"
-          />
-          <GridItem
-            label="Get Passport Mode"
-            Icon={Plane}
-            iconBgColor="#c2bff6"
-            labelColor="#333"
-          />
+      {/* 🔵 SECTION 1: HEADER (TOP LAYER) */}
+      <View style={styles.header}>
+        <View style={styles.searchBar}>
+          <TextInput placeholder="Search..." placeholderTextColor="#999" />
         </View>
+      </View>
+
+      {/* 🟢 SECTION 3: SCROLL (TOP LAYER - SAME LEVEL AS HEADER) */}
+      <Animated.ScrollView
+        style={styles.scroll}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        contentContainerStyle={styles.scrollContent}>
+        <View style={styles.fakeCard} />
+        <View style={styles.fakeCard} />
+        <View style={styles.fakeCard} />
+        <View style={styles.fakeCard} />
       </Animated.ScrollView>
     </View>
   );
@@ -151,87 +102,82 @@ const ModernHomeScreen = () => {
 
 export default ModernHomeScreen;
 
-/* 🎨 STYLES */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',
   },
 
-  /* 🔷 HEADER CONTAINER */
-  headerContainer: {
+  /* 🔵 HEADER (TOP) */
+  header: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0F52BA',
-    zIndex: 1000,
+
+    height: FIXED_HEADER_HEIGHT + STATUSBAR,
+    paddingTop: STATUSBAR,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 25 : 50,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-
-  /* 🔍 SEARCH BAR */
-  searchBarWrapper: {
-    height: SEARCH_BAR_HEIGHT,
     justifyContent: 'center',
+
+    backgroundColor: '#f9f9f9',
+
+    zIndex: 30,
+    elevation: 30,
   },
 
   searchBar: {
     height: 45,
-    backgroundColor: '#fff',
+    backgroundColor: 'blue',
     borderRadius: 12,
     paddingHorizontal: 15,
     justifyContent: 'center',
   },
 
-  /* 📦 COLLAPSIBLE */
-  collapsibleContainer: {
+  /* 🔴 COLLAPSIBLE (LOWEST) */
+  collapsible: {
+    position: 'absolute',
+    top: FIXED_HEADER_HEIGHT + STATUSBAR,
+    left: 0,
+    right: 0,
+
+    zIndex: 1010, // 👈 BELOW EVERYTHINGsdf
+    paddingHorizontal: 20,
     overflow: 'hidden',
+    backgroundColor: 'red',
   },
 
   balanceCard: {
-    height: COLLAPSIBLE_HEIGHT,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    height: 100,
+    backgroundColor: 'red',
     borderRadius: 16,
-    marginBottom: 10,
   },
 
-  /* 📄 CONTENT */
-  fakeContent: {
-    height: 250,
+  /* 🟢 SCROLL (COVERS COLLAPSIBLE) */
+  scroll: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+
+    zIndex: 20, // 👈 SAME AS HEADER
+    elevation: 20,
+  },
+
+  scrollContent: {
+    paddingTop: TOTAL_HEADER_HEIGHT + 20,
+    paddingBottom: 40,
+
+    backgroundColor: '#F8F9FB', // 🔥 REQUIRED TO COVER
+  },
+
+  fakeCard: {
+    height: 200,
     width: width - 40,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'green',
     alignSelf: 'center',
     borderRadius: 20,
-    marginTop: 20,
-
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-
-  /* GRID */
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginTop: 20,
+    marginBottom: 20,
   },
 });
