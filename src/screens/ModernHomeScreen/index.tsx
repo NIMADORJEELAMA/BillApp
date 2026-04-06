@@ -22,16 +22,52 @@ import Star from '../../assets/Icons/star-svgrepo-com.svg';
 import Incognito from '../../assets/Icons/incognito-svgrepo-com.svg';
 
 import Plane from '../../assets/Icons/plane-svgrepo-com.svg';
+import SalesChart from '../../components/Charts/SalesChart';
+import CustomTileButton from '../../components/CustomTileButton';
 
 const {width} = Dimensions.get('window');
 
 /* 🔥 CONFIG */
-const COLLAPSIBLE_HEIGHT = 130;
+const COLLAPSIBLE_HEIGHT = 200;
 const FIXED_HEADER_HEIGHT = 80;
 const STATUSBAR = Platform.OS === 'ios' ? 50 : 20;
-
+const GRID_SPACING = 8;
+const ITEM_WIDTH = (width - 20 * 2 - GRID_SPACING) / 2;
 const TOTAL_HEADER_HEIGHT = FIXED_HEADER_HEIGHT + COLLAPSIBLE_HEIGHT;
-
+const DASHBOARD_MENU = [
+  {
+    id: '1',
+    title: 'Recent Sales',
+    subtitle: 'Transactions',
+    image: require('../../../src/assets/Images_main/google.png'),
+    screen: 'ProfileScreenBms',
+    color: '#EEF2FF',
+  },
+  {
+    id: '2',
+    title: 'Inventory',
+    subtitle: 'Stock levels',
+    image: require('../../../src/assets/Images_main/google.png'),
+    screen: 'InventoryScreen',
+    color: '#FFF7ED',
+  },
+  {
+    id: '3',
+    title: 'Reports',
+    subtitle: 'Analysis',
+    image: require('../../../src/assets/Images_main/google.png'),
+    screen: 'ReportScreen',
+    color: '#F0FDF4',
+  },
+  {
+    id: '4',
+    title: 'Customers',
+    subtitle: 'Client list',
+    image: require('../../../src/assets/Images_main/google.png'),
+    screen: 'CustomerScreen',
+    color: '#FAF5FF',
+  },
+];
 const ModernHomeScreen = () => {
   const scrollY = useSharedValue(0);
   const navigation =
@@ -64,26 +100,16 @@ const ModernHomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* 🔴 SECTION 2: COLLAPSIBLE (BOTTOM LAYER) */}
-      <Animated.View style={[styles.collapsible, collapsibleStyle]}>
-        <View style={styles.balanceCard} />
-        <ButtonPreferences
-          title="Help Center"
-          onPress={() => navigation.navigate('HelpCenter')}
-          LeftIcon={Help}
-          RightIcon={ArrowRight}
-          // rightLabel="Next"
-          // type="outline"
-          iconColor={'#000'}
-        />
-      </Animated.View>
-
       {/* 🔵 SECTION 1: HEADER (TOP LAYER) */}
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <TextInput placeholder="Search..." placeholderTextColor="#999" />
         </View>
       </View>
+      {/* 🔴 SECTION 2: COLLAPSIBLE (BOTTOM LAYER) */}
+      <Animated.View style={[styles.collapsible, collapsibleStyle]}>
+        <SalesChart />
+      </Animated.View>
 
       {/* 🟢 SECTION 3: SCROLL (TOP LAYER - SAME LEVEL AS HEADER) */}
       <Animated.ScrollView
@@ -91,6 +117,24 @@ const ModernHomeScreen = () => {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         contentContainerStyle={styles.scrollContent}>
+        <View style={styles.gridContainer}>
+          {DASHBOARD_MENU.map(item => (
+            <CustomTileButton
+              key={item.id}
+              isGrid={true} // 🔥 This fixes the layout internally
+              title={item.title}
+              subtitle={item.subtitle}
+              imageSource={item.image}
+              onPress={() => navigation.navigate(item.screen as any)}
+              backgroundColor={item.color}
+              containerStyle={{
+                width: ITEM_WIDTH,
+                marginVertical: GRID_SPACING,
+                height: 80, // Slightly taller for better spacing
+              }}
+            />
+          ))}
+        </View>
         <View style={styles.fakeCard} />
         <View style={styles.fakeCard} />
         <View style={styles.fakeCard} />
@@ -117,7 +161,7 @@ const styles = StyleSheet.create({
 
     height: FIXED_HEADER_HEIGHT + STATUSBAR,
     paddingTop: STATUSBAR,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     justifyContent: 'center',
 
     backgroundColor: '#f9f9f9',
@@ -128,6 +172,7 @@ const styles = StyleSheet.create({
 
   searchBar: {
     height: 45,
+    marginTop: 20,
     backgroundColor: 'blue',
     borderRadius: 12,
     paddingHorizontal: 15,
@@ -141,7 +186,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
 
-    zIndex: 1010, // 👈 BELOW EVERYTHINGsdf
+    zIndex: 1010, // 👈 BELOW EVERYTHING
     paddingHorizontal: 20,
     overflow: 'hidden',
     backgroundColor: 'red',
@@ -164,11 +209,19 @@ const styles = StyleSheet.create({
     zIndex: 20, // 👈 SAME AS HEADER
     elevation: 20,
   },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20, // Match your screen padding
+    paddingBottom: 20,
+  },
 
   scrollContent: {
     paddingTop: TOTAL_HEADER_HEIGHT + 20,
-    paddingBottom: 40,
 
+    paddingBottom: 40,
+    borderTopLeftRadius: 50,
     backgroundColor: '#F8F9FB', // 🔥 REQUIRED TO COVER
   },
 
