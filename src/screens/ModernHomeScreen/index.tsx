@@ -28,6 +28,7 @@ import CustomTileButton from '../../components/CustomTileButton';
 const {width} = Dimensions.get('window');
 
 /* 🔥 CONFIG */
+/* 🔥 CONFIG */
 
 const COLLAPSIBLE_HEIGHT = 200;
 const FIXED_HEADER_HEIGHT = 80;
