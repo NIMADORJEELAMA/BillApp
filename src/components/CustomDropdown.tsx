@@ -72,7 +72,7 @@ const CustomDropdown = ({
         <Div style={styles.dropdownList}>
           <FlatList
             data={options}
-            keyExtractor={item => item.value.toString()}
+            keyExtractor={item => item.value}
             nestedScrollEnabled={true}
             keyboardShouldPersistTaps="handled"
             scrollEnabled={options.length > 5}

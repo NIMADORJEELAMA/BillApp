@@ -30,6 +30,7 @@ export default function ProductListScreen({navigation}: any) {
     try {
       if (showSpinner) setLoading(true);
       const response = await axiosInstance.get('/products');
+      console.log('response.data', response.data);
       setProducts(response.data.items || []);
     } catch (error) {
       Toast.show({type: 'error', text1: 'Failed to load products'});
