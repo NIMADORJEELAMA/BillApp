@@ -80,6 +80,7 @@ export type RootStackParamList = {
   AuthScreen: undefined;
   OrderPage: undefined;
   CartScreen: undefined;
+  SalesScreen: undefined;
   GenderSelect: undefined;
   Name: undefined;
   Relation: undefined;
@@ -280,7 +281,7 @@ const TabNavigator: React.FC = () => {
         />
       )}
 
-      {role == 'ADMIN' && (
+      {/* {role == 'ADMIN' && (
         <Tab.Screen
           name="SalesScreen"
           component={SalesScreen}
@@ -311,7 +312,7 @@ const TabNavigator: React.FC = () => {
             },
           }}
         />
-      )}
+      )} */}
 
       {role == 'ADMIN' && (
         <Tab.Screen
@@ -421,6 +422,8 @@ const Navigation = () => {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="OrderPage" component={OrderPage} />
           <Stack.Screen name="CartScreen" component={CartScreen} />
+          <Stack.Screen name="SalesScreen" component={SalesScreen} />
+
           {/* Settings and other inner screens should be here */}
           <Stack.Screen name="Preferences" component={Preferences} />
           <Stack.Screen name="PhoneNumber" component={PhoneNumber} />

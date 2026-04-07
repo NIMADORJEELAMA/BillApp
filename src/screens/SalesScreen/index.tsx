@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import {
   StyleSheet,
   View,
@@ -8,7 +8,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Modal,
   TextInput,
 } from 'react-native';
@@ -17,108 +16,100 @@ import {
   useCameraDevices,
   useCodeScanner,
 } from 'react-native-vision-camera';
-// Import the service at the top
 import {connectAndPrint} from '../../services/PrinterService';
 import {useDispatch, useSelector} from 'react-redux';
-import {addToCart, updateQty, clearCart} from '../../redux/slices/cartSlice'; // Ensure this path is correct
+import {addToCart, updateQty, clearCart} from '../../redux/slices/cartSlice';
 import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
-import color from '../../assets/Color/color';
 import Sound from 'react-native-sound';
 import ProductPickerModal from '../ProductScreen/ProductPickerModal';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ScanIcon from '../../assets/Icons/scan.svg';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
-  // Get cart items from Redux
+
+  // Selectors
   const cart = useSelector((state: any) => state.cart.items || []);
   const discount = useSelector((state: any) => state.cart.discount || 0);
 
+  // States
   const [hasPermission, setHasPermission] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isCameraVisible, setIsCameraVisible] = useState(true); // Toggle State
+  const [isCameraVisible, setIsCameraVisible] = useState(true);
   const [pickerVisible, setPickerVisible] = useState(false);
-  const lastScannedCode = useRef<string | null>(null);
-  const lastScanTime = useRef<number>(0);
   const [qtyModalVisible, setQtyModalVisible] = useState(false);
   const [tempQty, setTempQty] = useState('');
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
 
-  const openQtyModal = (productId: string, currentQty: number) => {
-    setActiveProductId(productId);
-    setTempQty(currentQty.toString());
-    setQtyModalVisible(true);
+  // Refs for Scanner Debounce
+  const lastScannedCode = useRef<string | null>(null);
+  const lastScanTime = useRef<number>(0);
+
+  // Add these to your state declarations
+  const [discountPercent, setDiscountPercent] = useState('0');
+  const [manualDiscount, setManualDiscount] = useState('0');
+  const [gstPercentInput, setGstPercentInput] = useState('0');
+
+  // Update Calculations
+  const subtotal = useMemo(
+    () => cart.reduce((s, i) => s + i.price * i.quantity, 0),
+    [cart],
+  );
+
+  // Sync Discount Amount when Percent changes
+  const handleDiscountPercentChange = val => {
+    setDiscountPercent(val);
+    const num = parseFloat(val) || 0;
+    const amount = (subtotal * num) / 100;
+    setManualDiscount(amount.toFixed(2));
   };
 
-  const submitManualQty = () => {
-    const newQty = parseInt(tempQty || '0', 10);
-    if (!isNaN(newQty) && activeProductId) {
-      const currentItem = cart.find(
-        (i: any) => i.productId === activeProductId,
-      );
-      const delta = newQty - (currentItem?.quantity || 0);
-      dispatch(updateQty({id: activeProductId, delta}));
+  // Sync Discount Percent when Amount changes
+  const handleManualDiscountChange = val => {
+    setManualDiscount(val);
+    const num = parseFloat(val) || 0;
+    if (subtotal > 0) {
+      const percent = (num / subtotal) * 100;
+      setDiscountPercent(percent.toFixed(1));
     }
-    setQtyModalVisible(false);
   };
-  const handleManualQty = (productId: string, currentQty: number) => {
-    Alert.prompt(
-      'Set Quantity',
-      'Enter the total quantity for this item:',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'OK',
-          onPress: value => {
-            const newQty = parseInt(value || '0', 10);
-            if (!isNaN(newQty) && newQty >= 0) {
-              // Calculate delta to reach the target number
-              const delta = newQty - currentQty;
-              dispatch(updateQty({id: productId, delta}));
-            }
-          },
-        },
-      ],
-      'plain-text',
-      currentQty.toString(),
-      'number-pad',
-    );
-  };
-  useEffect(() => {
-    (async () => {
-      const status = await Camera.requestCameraPermission();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
-  useEffect(() => {
-    // Initialize sound (Make sure 'success_beep.mp3' exists in your resources)
-    beepSound.current = new Sound('beep.mp3', Sound.MAIN_BUNDLE, error => {
-      if (error) {
-        console.log('Failed to load the sound', error);
-        return;
-      }
-    });
 
-    return () => {
-      if (beepSound.current) beepSound.current.release();
-    };
+  const finalDiscount = parseFloat(manualDiscount) || 0;
+  const taxableAmount = Math.max(0, subtotal - finalDiscount);
+  const finalGstAmount =
+    (taxableAmount * (parseFloat(gstPercentInput) || 0)) / 100;
+  const finalAmount = taxableAmount + finalGstAmount;
+
+  // --- Helpers ---
+  const playSuccessSound = useCallback(() => {
+    beepSound.current?.stop(() => beepSound.current?.play());
   }, []);
-  const playSuccessSound = () => {
-    if (beepSound.current) {
-      beepSound.current.stop(() => {
-        beepSound.current?.play();
-      });
+
+  const handleLookup = async (barcode: string) => {
+    try {
+      const {data} = await axiosInstance.get(`/products/barcode/${barcode}`);
+      if (data) {
+        playSuccessSound();
+        dispatch(addToCart(data));
+        Toast.show({
+          type: 'success',
+          text1: `Added ${data.name}`,
+          position: 'bottom',
+        });
+      }
+    } catch (error) {
+      console.log('Barcode not found:', barcode);
     }
   };
 
   const codeScanner = useCodeScanner({
     codeTypes: ['ean-13', 'code-128', 'qr', 'code-39'],
     onCodeScanned: codes => {
-      const now = Date.now();
       const value = codes[0]?.value;
-
-      // Debounce: Prevents duplicate scans of the same item within 2 seconds
+      const now = Date.now();
       if (
         value &&
         (value !== lastScannedCode.current || now - lastScanTime.current > 2000)
@@ -130,39 +121,20 @@ export default function SalesScreen() {
     },
   });
 
-  const handleLookup = async (barcode: string) => {
-    try {
-      const response = await axiosInstance.get(`/products/barcode/${barcode}`);
-      if (response.data) {
-        playSuccessSound();
-        dispatch(addToCart(response.data));
-        Toast.show({
-          type: 'success',
-          text1: `Added ${response.data.name}`,
-          position: 'bottom',
-        });
-      }
-    } catch (error) {
-      console.log('Product not found for barcode:', barcode);
-    }
-  };
+  // --- Actions ---
+  const handleCheckout = async (shouldPrint: boolean) => {
+    if (!cart.length || loading) return;
 
-  const subtotal = cart.reduce(
-    (s: number, i: any) => s + i.price * i.quantity,
-    0,
-  );
-  const finalAmount = subtotal - (parseFloat(discount.toString()) || 0);
-
-  // Inside SalesScreen component...
-  const handleCheckout = async () => {
     setLoading(true);
     try {
       const payload = {
-        userId: 'a5d0861f-0248-45cb-ba23-9bf3844ffc1a',
+        userId: 'a5d0861f-0248-45cb-ba23-9bf3844ffc1a', // Suggestion: Get from Auth state
         paymentMode: 'CASH',
         totalAmount: subtotal,
-        discount: discount,
-        finalAmount: finalAmount,
+        discount,
+        taxAmount: finalGstAmount, // Add this
+        gstPercentage: gstPercentInput,
+        finalAmount,
         items: cart.map((i: any) => ({
           productId: i.productId,
           quantity: i.quantity,
@@ -173,109 +145,129 @@ export default function SalesScreen() {
       const response = await axiosInstance.post('/sales', payload);
 
       if (response.status === 201 || response.status === 200) {
-        Toast.show({type: 'success', text1: 'Sale Record Created'});
-
-        // --- START PRINTING ---
-        try {
-          await connectAndPrint(cart, subtotal, discount, finalAmount);
-        } catch (printError) {
-          Alert.alert(
-            'Printer Error',
-            'Sale saved, but failed to print receipt.',
-          );
+        if (shouldPrint) {
+          const mac = await AsyncStorage.getItem('SAVED_PRINTER_MAC');
+          if (!mac) {
+            Toast.show({
+              type: 'info',
+              text1: 'Sale Saved',
+              text2: 'No printer paired to print receipt.',
+            });
+          } else {
+            const result = await connectAndPrint(
+              cart,
+              subtotal,
+              discount,
+              finalAmount,
+            );
+            if (!result.success) {
+              Toast.show({
+                type: 'error',
+                text1: 'Print Failed',
+                text2: result.error,
+              });
+            }
+          }
         }
-        // --- END PRINTING ---
-
         dispatch(clearCart());
+        Toast.show({type: 'success', text1: 'Transaction Complete'});
       }
-    } catch (e) {
-      Toast.show({type: 'error', text1: 'Checkout failed'});
+    } catch (e: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Checkout Failed',
+        text2: e.response?.data?.message || 'Server connection error',
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  const submitManualQty = () => {
+    const newQty = parseInt(tempQty, 10);
+    if (!isNaN(newQty) && activeProductId) {
+      const currentItem = cart.find(
+        (i: any) => i.productId === activeProductId,
+      );
+      const delta = newQty - (currentItem?.quantity || 0);
+      dispatch(updateQty({id: activeProductId, delta}));
+    }
+    setQtyModalVisible(false);
+  };
+
+  // --- Effects ---
+  useEffect(() => {
+    Camera.requestCameraPermission().then(status =>
+      setHasPermission(status === 'granted'),
+    );
+    beepSound.current = new Sound('beep.mp3', Sound.MAIN_BUNDLE, error => {
+      if (error) console.log('Sound load error', error);
+    });
+    return () => beepSound.current?.release();
+  }, []);
 
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back');
 
   return (
     <MainLayout title="POS Terminal" showBack>
-      <Modal visible={qtyModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.qtyModalContent}>
-            <Text style={styles.modalTitle}>Set Quantity</Text>
-            <TextInput
-              style={styles.qtyInput}
-              keyboardType="number-pad"
-              value={tempQty}
-              onChangeText={setTempQty}
-              autoFocus
-              selectTextOnFocus
-            />
-            <View style={styles.modalButtons}>
+      <KeyboardAvoidingView
+        style={{flex: 1}}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
+        <View style={styles.container}>
+          {/* 🔹 TOP SECTION */}
+          <View>
+            <View style={styles.topActionBar}>
               <TouchableOpacity
-                style={[styles.modalBtn, {backgroundColor: '#e2e8f0'}]}
-                onPress={() => setQtyModalVisible(false)}>
-                <Text style={{color: '#475569', fontWeight: 'bold'}}>
-                  CANCEL
-                </Text>
+                style={styles.browseButton}
+                onPress={() => setPickerVisible(true)}>
+                <Text style={styles.browseButtonText}>+ Browse Products</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.modalBtn, {backgroundColor: '#000'}]}
-                onPress={submitManualQty}>
-                <Text style={{color: '#fff', fontWeight: 'bold'}}>UPDATE</Text>
+                style={[
+                  styles.cameraToggleButton,
+                  isCameraVisible && styles.cameraActiveBtn,
+                ]}
+                onPress={() => setIsCameraVisible(!isCameraVisible)}>
+                {isCameraVisible ? (
+                  <Text style={styles.cameraActiveIcon}>✕</Text>
+                ) : (
+                  <ScanIcon width={28} height={28} />
+                )}
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
-      <View style={styles.container}>
-        {/* CAMERA SECTION (25% Height) */}
-        <View
-          style={[
-            styles.cameraContainer,
-            !isCameraVisible && styles.cameraClosed, // Dynamic styling
-          ]}>
-          {isCameraVisible ? (
-            <>
-              {device && hasPermission ? (
-                <Camera
-                  style={StyleSheet.absoluteFill}
-                  device={device}
-                  isActive={isCameraVisible}
-                  codeScanner={codeScanner}
-                />
-              ) : (
-                <ActivityIndicator color="#fff" style={{flex: 1}} />
-              )}
-              <View style={styles.scanLine} />
-              <TouchableOpacity
-                style={styles.closeCameraButton}
-                onPress={() => setIsCameraVisible(false)}>
-                <Text style={styles.closeCameraText}>✕ CLOSE SCANNER</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <TouchableOpacity
-              style={styles.reopenContainer}
-              onPress={() => setIsCameraVisible(true)}>
-              <Text style={styles.reopenText}>📷 TAP TO OPEN SCANNER</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            style={styles.manualAddBtn}
-            onPress={() => setPickerVisible(true)}>
-            <Text style={styles.manualAddText}>+ BROWSE PRODUCTS</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* CART LIST SECTION */}
-        <View style={styles.cartSection}>
+            {isCameraVisible && (
+              <View style={styles.cameraContainer}>
+                {device && hasPermission ? (
+                  <>
+                    <Camera
+                      style={StyleSheet.absoluteFill}
+                      device={device}
+                      isActive={isCameraVisible}
+                      codeScanner={codeScanner}
+                    />
+                    <View style={styles.scanLine} />
+                  </>
+                ) : (
+                  <ActivityIndicator color="#6366f1" style={{flex: 1}} />
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* 🔹 CART LIST (ONLY SCROLLABLE AREA) */}
           <FlatList
             data={cart}
             keyExtractor={item => item.productId}
+            style={{flex: 1}}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingBottom: 20,
+            }}
+            keyboardShouldPersistTaps="handled"
             renderItem={({item}) => (
               <View style={styles.cartItem}>
                 <View style={{flex: 1}}>
@@ -287,7 +279,6 @@ export default function SalesScreen() {
                   </Text>
                 </View>
 
-                {/* IMPROVED QTY CONTROLS */}
                 <View style={styles.qtyContainer}>
                   <TouchableOpacity
                     onPress={() =>
@@ -298,15 +289,18 @@ export default function SalesScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onLongPress={() =>
-                      openQtyModal(item.productId, item.quantity)
-                    }
+                    onLongPress={() => {
+                      setActiveProductId(item.productId);
+                      setTempQty(item.quantity.toString());
+                      setQtyModalVisible(true);
+                    }}
                     style={styles.qtyNumberBox}>
                     <Text style={styles.qtyText}>{item.quantity}</Text>
                   </TouchableOpacity>
+
                   <TouchableOpacity
                     onPress={() =>
-                      dispatch(updateQty({id: item.productId, delta: +1}))
+                      dispatch(updateQty({id: item.productId, delta: 1}))
                     }
                     style={styles.qtyBtn}>
                     <Text style={styles.qtyBtnText}>+</Text>
@@ -321,119 +315,272 @@ export default function SalesScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>Cart is empty</Text>
-                <Text style={styles.emptySubText}>
-                  Scan barcodes to add products
-                </Text>
               </View>
             }
           />
-        </View>
-        <ProductPickerModal
-          isVisible={pickerVisible}
-          onClose={() => setPickerVisible(false)}
-          onProductSelected={() => {
-            // playSuccessSound();
-            Toast.show({
-              type: 'success',
-              text1: 'Added to cart',
-              position: 'bottom',
-            });
-          }}
-        />
 
-        {/* FOOTER */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={styles.footer}>
-            <View style={styles.footerRow}>
-              <View>
-                <Text style={styles.totalLabel}>Total Payable</Text>
-                <Text style={styles.totalValue}>₹{finalAmount.toFixed(2)}</Text>
+          {/* 🔹 FOOTER (KEYBOARD SAFE) */}
+          <View style={styles.footerContainer}>
+            <View style={styles.summarySection}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Subtotal</Text>
+                <Text style={styles.summaryValueSmall}>
+                  ₹{subtotal.toFixed(2)}
+                </Text>
               </View>
 
+              {/* Discount */}
+              {/* Discount Row */}
+              <View style={styles.editRow}>
+                <Text style={styles.summaryLabel}>Discount</Text>
+                <View style={styles.inputGroup}>
+                  {/* Percentage Input */}
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.inlineInput}
+                      keyboardType="numeric"
+                      value={discountPercent}
+                      onChangeText={handleDiscountPercentChange}
+                    />
+                    <Text style={styles.inputSuffix}>%</Text>
+                  </View>
+
+                  {/* Amount Input */}
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.inputPrefix}>₹</Text>
+                    <TextInput
+                      style={styles.inlineInput}
+                      keyboardType="numeric"
+                      value={manualDiscount}
+                      onChangeText={handleManualDiscountChange}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* GST Row */}
+              <View style={styles.editRow}>
+                <Text style={styles.summaryLabel}>GST</Text>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.inlineInput}
+                    keyboardType="numeric"
+                    value={gstPercentInput}
+                    onChangeText={setGstPercentInput}
+                  />
+                  <Text style={styles.inputSuffix}>%</Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabelMain}>Total</Text>
+                <Text style={styles.totalAmountMain}>
+                  ₹{finalAmount.toFixed(2)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.footerActionRow}>
               <TouchableOpacity
-                style={[
-                  styles.payBtn,
-                  (!cart.length || loading) && {backgroundColor: '#cbd5e1'},
-                ]}
-                onPress={handleCheckout}
-                disabled={!cart.length || loading}>
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.payText}>COMPLETE SALE</Text>
-                )}
+                style={styles.btnSecondary}
+                onPress={() => handleCheckout(false)}>
+                <Text style={styles.btnSecondaryText}>SAVE</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.btnPrimary}
+                onPress={() => handleCheckout(true)}>
+                <Text style={styles.btnPrimaryText}>SAVE & PRINT</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </View>
+
+          <ProductPickerModal
+            isVisible={pickerVisible}
+            onClose={() => setPickerVisible(false)}
+            onProductSelected={() => {}}
+          />
+        </View>
+      </KeyboardAvoidingView>
     </MainLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#f8fafc'},
-
-  cameraContainer: {
-    height: '25%', // Visible height
-    backgroundColor: '#1e293b',
-    overflow: 'hidden',
-    position: 'relative',
+  topActionBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 10,
   },
-  cameraClosed: {
-    height: 50, // Minimal height when closed
-    backgroundColor: '#f1f5f9',
-    borderBottomWidth: 1,
-    borderColor: '#e2e8f0',
+  browseButton: {
+    flex: 1,
+    height: 50,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#2d2e2e',
+  },
+  browseButtonText: {fontWeight: '600', color: '#475569'},
+  cameraToggleButton: {
+    width: 50,
+    height: 50,
+    backgroundColor: '#000',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraActiveBtn: {backgroundColor: '#fee2e2'},
+  cameraActiveIcon: {color: '#ef4444', fontWeight: 'bold', fontSize: 18},
+  cameraContainer: {
+    height: 180,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    marginBottom: 16,
   },
   scanLine: {
     position: 'absolute',
     top: '50%',
-    left: '15%',
-    right: '15%',
+    left: '10%',
+    right: '10%',
     height: 1,
     backgroundColor: '#22c55e',
     zIndex: 2,
-    shadowColor: '#22c55e',
-    shadowOpacity: 0.8,
-    elevation: 5,
   },
-  closeCameraButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    zIndex: 10,
-  },
-  closeCameraText: {color: '#fff', fontSize: 10, fontWeight: '800'},
-  reopenContainer: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-  reopenText: {color: '#94a3b8', fontWeight: '800', letterSpacing: 1},
-  actionBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  cartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#e2e8f0',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
   },
-  manualAddBtn: {
-    backgroundColor: '#f1f5f9',
-    paddingVertical: 10,
-    borderRadius: 8,
+  itemName: {fontSize: 15, fontWeight: '700', color: '#1e293b'},
+  itemSubText: {fontSize: 12, color: '#94a3b8'},
+  qtyContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#cbd5e1',
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    marginHorizontal: 8,
   },
-  manualAddText: {
-    color: '#475569',
-    fontWeight: '800',
-    fontSize: 12,
-    letterSpacing: 0.5,
+  qtyBtn: {padding: 8, paddingHorizontal: 12},
+  qtyBtnText: {fontSize: 18, fontWeight: 'bold'},
+  qtyNumberBox: {minWidth: 30, alignItems: 'center'},
+  qtyText: {fontWeight: '800'},
+  itemTotal: {width: 70, textAlign: 'right', fontWeight: '800'},
+  footerContainer: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    elevation: 10,
   },
+  summarySection: {marginBottom: 15},
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  editRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  inputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  inlineInput: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    minWidth: 60,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e293b',
+    textAlign: 'center',
+    // borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 4,
+  },
+  inputPrefix: {fontSize: 12, color: '#64748b', marginRight: 2},
+  inputSuffix: {fontSize: 12, color: '#64748b', marginLeft: 2},
+  calculatedTax: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1e293b',
+    minWidth: 70,
+    textAlign: 'right',
+  },
+  tagTextContainer: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  tagText: {
+    fontSize: 10,
+    color: '#6366f1',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  summaryLabel: {color: '#64748b'},
+  summaryValueSmall: {fontWeight: '600'},
+  divider: {height: 1, backgroundColor: '#f1f5f9', marginVertical: 10},
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabelMain: {fontWeight: '700', color: '#94a3b8'},
+  totalAmountMain: {fontSize: 24, fontWeight: '900', color: '#0f172a'},
+  footerActionRow: {flexDirection: 'row', gap: 12},
+  btnPrimary: {
+    flex: 1.5,
+    height: 56,
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnPrimaryText: {color: '#fff', fontWeight: '800'},
+  btnSecondary: {
+    flex: 1,
+    height: 56,
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  btnSecondaryText: {color: '#475569', fontWeight: '700'},
+  btnDisabled: {opacity: 0.5},
+  emptyContainer: {marginTop: 40, alignItems: 'center'},
+  emptyText: {color: '#cbd5e1', fontSize: 16},
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -446,9 +593,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
-    elevation: 10,
   },
-  modalTitle: {fontSize: 16, fontWeight: 'bold', marginBottom: 15},
+  modalTitle: {fontWeight: 'bold', marginBottom: 15},
   qtyInput: {
     width: '100%',
     height: 50,
@@ -457,109 +603,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     textAlign: 'center',
     fontSize: 24,
-    fontWeight: 'bold',
     marginBottom: 20,
-    color: '#000',
   },
   modalButtons: {flexDirection: 'row', gap: 10},
-  modalBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  // Cart Styles
-  cartSection: {flex: 1, paddingHorizontal: 16, paddingTop: 16},
-  cartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  cartTitle: {fontSize: 16, fontWeight: '800', color: '#1e293b'},
-  itemCount: {fontSize: 12, color: '#64748b', fontWeight: '600'},
-
-  cartItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  itemName: {fontSize: 15, fontWeight: '700', color: '#1e293b'},
-  itemSubText: {fontSize: 12, color: '#94a3b8', marginTop: 2},
-
-  qtyContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginHorizontal: 10,
-    overflow: 'hidden',
-  },
-  qtyDisplay: {
-    paddingHorizontal: 12,
-    backgroundColor: '#f8fafc',
-    height: '100%',
-    justifyContent: 'center',
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  qtyBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-  },
-  qtyBtnText: {fontWeight: 'bold', fontSize: 16, color: '#000'},
-  qtyText: {fontWeight: '800', minWidth: 20, textAlign: 'center', fontSize: 14},
-  itemTotal: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0f172a',
-    width: 75,
-    textAlign: 'right',
-  },
-
-  // Footer
-  footer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderTopWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: -3},
-    shadowOpacity: 0.05,
-    elevation: 10,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  totalLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-  },
-  totalValue: {fontSize: 26, fontWeight: '900', color: '#000'},
-  payBtn: {
-    backgroundColor: color.black || '#000',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    minWidth: 160,
-  },
-  payText: {color: '#fff', fontWeight: '800', fontSize: 14, letterSpacing: 0.5},
-
-  emptyContainer: {alignItems: 'center', marginTop: 60},
-  emptyText: {color: '#cbd5e1', fontSize: 18, fontWeight: '800'},
-  emptySubText: {color: '#cbd5e1', fontSize: 12, marginTop: 4},
+  modalBtn: {flex: 1, padding: 12, borderRadius: 8, alignItems: 'center'},
 });

@@ -27,8 +27,7 @@ import CustomTileButton from '../../components/CustomTileButton';
 
 const {width} = Dimensions.get('window');
 
-/* 🔥 CONFIG */
-/* 🔥 CONFIG */
+/* CONFIG */
 
 const COLLAPSIBLE_HEIGHT = 200;
 const FIXED_HEADER_HEIGHT = 80;
@@ -39,10 +38,10 @@ const TOTAL_HEADER_HEIGHT = FIXED_HEADER_HEIGHT + COLLAPSIBLE_HEIGHT;
 const DASHBOARD_MENU = [
   {
     id: '1',
-    title: 'Recent Sales',
+    title: 'Create Sales',
     subtitle: 'Transactions',
     image: require('../../../src/assets/Images_main/google.png'),
-    screen: 'ProfileScreenBms',
+    screen: 'SalesScreen',
     color: '#EEF2FF',
   },
   {

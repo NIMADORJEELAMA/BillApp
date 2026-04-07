@@ -9,17 +9,19 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {addToCart, updateQty} from '../../redux/slices/cartSlice';
 import axiosInstance from '../../services/axiosInstance';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const {width} = Dimensions.get('window');
 const ITEM_WIDTH = (width - 48) / 3;
 
 export default function ProductPickerModal({isVisible, onClose}: any) {
   const dispatch = useDispatch();
-  // Get cart from Redux to show current quantities in the grid
   const cart = useSelector((state: any) => state.cart.items || []);
 
   const [loading, setLoading] = useState(false);
@@ -48,30 +50,35 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
     );
   }, [products, searchQuery]);
 
+  const cartCount = cart.reduce((s: number, i: any) => s + i.quantity, 0);
+
   const renderProductItem = ({item}: {item: any}) => {
-    // Check if item is already in cart to show QTY controls
     const cartItem = cart.find((i: any) => i.productId === item.id);
     const quantity = cartItem ? cartItem.quantity : 0;
+    const isInCart = quantity > 0;
 
     return (
-      <View style={styles.gridItem}>
+      <View style={[styles.gridItem, isInCart && styles.gridItemActive]}>
+        <View style={styles.priceTag}>
+          <Text style={styles.priceTagText}>₹{item.price}</Text>
+        </View>
+
         <Text style={styles.productName} numberOfLines={2}>
           {item.name}
         </Text>
-        <Text style={styles.productPrice}>₹{item.price}</Text>
 
-        {quantity > 0 ? (
-          <View style={styles.qtyBadgeContainer}>
+        {isInCart ? (
+          <View style={styles.qtyContainer}>
             <TouchableOpacity
-              style={styles.miniQtyBtn}
+              style={styles.qtyBtn}
               onPress={() => dispatch(updateQty({id: item.id, delta: -1}))}>
               <Text style={styles.qtyBtnText}>−</Text>
             </TouchableOpacity>
 
-            <Text style={styles.qtyValueText}>{quantity}</Text>
+            <Text style={styles.qtyValue}>{quantity}</Text>
 
             <TouchableOpacity
-              style={styles.miniQtyBtn}
+              style={styles.qtyBtn}
               onPress={() => dispatch(updateQty({id: item.id, delta: 1}))}>
               <Text style={styles.qtyBtnText}>+</Text>
             </TouchableOpacity>
@@ -80,7 +87,7 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => dispatch(addToCart(item))}>
-            <Text style={styles.addBtnText}>ADD</Text>
+            <Text style={styles.addBtnText}>+ ADD</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -88,120 +95,230 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
   };
 
   return (
-    <Modal visible={isVisible} animationType="slide">
-      <View style={styles.safeArea}>
+    <Modal
+      visible={isVisible}
+      animationType="slide"
+      presentationStyle="pageSheet">
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" />
+
+        {/* HEADER */}
         <View style={styles.header}>
-          <Text style={styles.title}>All Products</Text>
-          <TouchableOpacity onPress={onClose} style={styles.doneBtn}>
-            <Text style={styles.doneBtnText}>CLOSE</Text>
+          <View>
+            <Text style={styles.headerTitle}>Product Catalog</Text>
+            <Text style={styles.headerSubtitle}>
+              {products.length} Items Available
+            </Text>
+          </View>
+          <TouchableOpacity onPress={onClose} style={styles.closeCircle}>
+            <Text style={styles.closeIcon}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search products..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+        {/* SEARCH BAR */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchWrapper}>
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or category..."
+              placeholderTextColor="#94a3b8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              clearButtonMode="while-editing"
+            />
+          </View>
+        </View>
 
         {loading ? (
-          <ActivityIndicator color="#000" style={{marginTop: 50}} />
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#6366f1" />
+            <Text style={styles.loaderText}>Loading Products...</Text>
+          </View>
         ) : (
           <FlatList
             data={filteredProducts}
             keyExtractor={item => item.id}
             renderItem={renderProductItem}
             numColumns={3}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContainer}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No products found</Text>
+              </View>
+            }
           />
         )}
-      </View>
+
+        {/* FLOATING ACTION FOOTER */}
+        {cartCount > 0 && (
+          <View style={styles.footerFloating}>
+            <TouchableOpacity style={styles.footerButton} onPress={onClose}>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{cartCount}</Text>
+              </View>
+              <Text style={styles.footerButtonText}>Review Selections</Text>
+              <Text style={styles.footerArrow}>→</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </SafeAreaView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {flex: 1, backgroundColor: '#f8fafc', paddingTop: 40},
+  safeArea: {flex: 1, backgroundColor: '#fdfdfd'},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 10,
     alignItems: 'center',
   },
-  title: {fontSize: 18, fontWeight: '900', color: '#0f172a'},
-  doneBtn: {
-    backgroundColor: '#0f172a',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  doneBtnText: {color: '#fff', fontWeight: 'bold', fontSize: 12},
-  searchInput: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: 10,
-  },
-  listContainer: {paddingHorizontal: 8},
-  gridItem: {
-    width: ITEM_WIDTH,
-    backgroundColor: '#fff',
-    margin: 4,
-    padding: 10,
-    borderRadius: 12,
+  headerTitle: {fontSize: 22, fontWeight: '800', color: '#1e293b'},
+  headerSubtitle: {fontSize: 12, color: '#64748b', fontWeight: '500'},
+  closeCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    justifyContent: 'space-between',
-    minHeight: 120,
+    justifyContent: 'center',
   },
-  productName: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1e293b',
-    textAlign: 'center',
-  },
-  productPrice: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#2563eb',
-    marginVertical: 4,
-  },
+  closeIcon: {fontSize: 14, fontWeight: 'bold', color: '#64748b'},
 
-  // Qty Controls Styling
-  qtyBadgeContainer: {
+  searchSection: {paddingHorizontal: 16, paddingBottom: 15},
+  searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f1f5f9',
-    borderRadius: 20,
-    paddingHorizontal: 4,
-    marginTop: 5,
-    width: '100%',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  searchIcon: {marginRight: 8, fontSize: 16},
+  searchInput: {flex: 1, fontSize: 15, color: '#1e293b', fontWeight: '500'},
+
+  listContainer: {paddingHorizontal: 10, paddingBottom: 100},
+  gridItem: {
+    width: ITEM_WIDTH,
+    backgroundColor: '#fff',
+    margin: 6,
+    padding: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    // Elevation for Android
+    elevation: 2,
+    minHeight: 140,
     justifyContent: 'space-between',
   },
-  miniQtyBtn: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+  gridItemActive: {
+    borderColor: '#6366f1',
+    backgroundColor: '#f5f7ff',
+    borderWidth: 1.5,
+  },
+  priceTag: {
+    backgroundColor: '#eef2ff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  priceTagText: {fontSize: 11, fontWeight: '800', color: '#6366f1'},
+  productName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+    textAlign: 'center',
+    lineHeight: 16,
+    flex: 1,
+  },
+
+  qtyContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginTop: 10,
+    padding: 2,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  qtyBtnText: {fontSize: 14, fontWeight: 'bold', color: '#000'},
-  qtyValueText: {fontSize: 13, fontWeight: '900', color: '#0f172a'},
+  qtyBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyBtnText: {fontSize: 16, fontWeight: 'bold', color: '#1e293b'},
+  qtyValue: {fontSize: 14, fontWeight: '800', color: '#6366f1'},
 
   addBtn: {
-    backgroundColor: '#e2e8f0',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
+    backgroundColor: '#6366f1',
+    paddingVertical: 8,
+    borderRadius: 10,
     width: '100%',
     alignItems: 'center',
+    marginTop: 10,
   },
-  addBtnText: {fontSize: 10, fontWeight: '800', color: '#475569'},
+  addBtnText: {fontSize: 11, fontWeight: '800', color: '#fff'},
+
+  loaderContainer: {marginTop: 100, alignItems: 'center'},
+  loaderText: {marginTop: 10, color: '#94a3b8', fontSize: 14},
+
+  emptyContainer: {marginTop: 50, alignItems: 'center'},
+  emptyText: {color: '#94a3b8', fontSize: 16, fontWeight: '600'},
+
+  footerFloating: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 10},
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  footerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  footerButtonText: {
+    flex: 1,
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+    marginLeft: 12,
+  },
+  badge: {
+    backgroundColor: '#6366f1',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {color: '#fff', fontSize: 12, fontWeight: '900'},
+  footerArrow: {color: '#fff', fontSize: 20, fontWeight: 'bold'},
 });

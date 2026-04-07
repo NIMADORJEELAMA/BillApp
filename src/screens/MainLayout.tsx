@@ -47,7 +47,7 @@ const MainLayout = ({
         />
       )}
 
-      <View style={[styles.header, {paddingTop: insets.top + 4}]}>
+      <View style={[styles.header, {paddingTop: insets.top + 2}]}>
         <View style={styles.headerTopRow}>
           {/* LEFT SECTION */}
           <View style={styles.sideSection}>
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#fff',
     paddingHorizontal: 15,
-    paddingBottom: 12,
+    paddingBottom: 8,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -125,8 +125,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconButton: {
-    width: 40,
-    height: 40,
+    width: 35,
+    height: 35,
     borderRadius: 20,
     backgroundColor: '#F9F9F9',
     justifyContent: 'center',

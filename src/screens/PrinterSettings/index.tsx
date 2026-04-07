@@ -21,6 +21,7 @@ const PrinterSettings = () => {
   const [printers, setPrinters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [connectedMac, setConnectedMac] = useState<string | null>(null);
+  const [availableDevices, setAvailableDevices] = useState<any[]>([]);
 
   const requestPermissions = async () => {
     if (Platform.OS === 'android') {
@@ -37,21 +38,58 @@ const PrinterSettings = () => {
     try {
       await requestPermissions();
       await BLEPrinter.init();
+
       const results = await BLEPrinter.getDeviceList();
-      setPrinters(results);
+
+      const valid = results.filter(
+        (d: any) =>
+          d?.inner_mac_address && d?.device_name && d.device_name !== '',
+      );
+
+      setPrinters(valid);
+      setAvailableDevices(valid); // 🔥 important
     } catch (err) {
       Toast.show({type: 'error', text1: 'Discovery Failed'});
     } finally {
       setLoading(false);
     }
   };
-
+  const isDeviceAvailable = (mac: string) => {
+    return availableDevices.some(d => d.inner_mac_address === mac);
+  };
   const connectToPrinter = async (printer: any) => {
+    if (!printer?.inner_mac_address) {
+      Toast.show({type: 'error', text1: 'Invalid printer'});
+      return;
+    }
+
+    // 🔥 MOST IMPORTANT CHECK
+    if (!isDeviceAvailable(printer.inner_mac_address)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Printer Not Found',
+        text2: 'Turn ON printer and scan again',
+      });
+      return;
+    }
+
     try {
       setLoading(true);
 
       await BLEPrinter.init();
-      await BLEPrinter.connectPrinter(printer.inner_mac_address);
+
+      // 🔥 Wrap native call safely
+      await new Promise(async (resolve, reject) => {
+        try {
+          await BLEPrinter.connectPrinter(printer.inner_mac_address);
+          resolve(true);
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      // 🔥 DO NOT call printText immediately (causes crash)
+      setConnectedMac(printer.inner_mac_address);
 
       await AsyncStorage.setItem(
         'SAVED_PRINTER_MAC',
@@ -59,19 +97,31 @@ const PrinterSettings = () => {
       );
       await AsyncStorage.setItem('SAVED_PRINTER_NAME', printer.device_name);
 
-      setConnectedMac(printer.inner_mac_address);
-
       Toast.show({
         type: 'success',
         text1: 'Connected',
-        text2: `${printer.device_name} is ready.`,
       });
     } catch (err) {
-      console.error(err);
-      Toast.show({type: 'error', text1: 'Connection Failed'});
+      console.log('Connect error:', err);
+
+      setConnectedMac(null);
+
+      Toast.show({
+        type: 'error',
+        text1: 'Printer OFF',
+        text2: 'Please turn on printer',
+      });
     } finally {
       setLoading(false);
     }
+  };
+  const connectWithTimeout = (mac: string, timeout = 5000) => {
+    return Promise.race([
+      BLEPrinter.connectPrinter(mac),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timeout')), timeout),
+      ),
+    ]);
   };
   // const connectToPrinter = async (printer: any) => {
   //   try {
