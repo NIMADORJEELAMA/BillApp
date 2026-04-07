@@ -13,7 +13,7 @@ import {
 
 interface SearchableDropdownProps {
   label: string;
-  value: string; // The selected name to display in the input
+  value: string; // The selected name to display in the input d
   onChangeText: (text: string) => void;
   data: any[];
   onSelectItem: (item: any) => void;
