@@ -1,26 +1,30 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {
   StyleSheet,
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   Modal,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import {connectAndPrint} from '../../services/PrinterService';
 import Toast from 'react-native-toast-message';
+// Note: If you want actual date pickers, import RNDateTimePicker here
 
 export default function SalesListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sales, setSales] = useState<any[]>([]);
 
-  // Modal States
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterDate, setFilterDate] = useState<string | null>(null); // YYYY-MM-DD
+
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
 
@@ -41,6 +45,30 @@ export default function SalesListScreen() {
     fetchSales();
   }, [fetchSales]);
 
+  // Optimized Filter Logic
+  const filteredSales = useMemo(() => {
+    return sales.filter(sale => {
+      const billNo = sale.billNumber.toString();
+      const cashier = sale.user?.name?.toLowerCase() || '';
+      const search = searchQuery.toLowerCase();
+
+      const matchesSearch = billNo.includes(search) || cashier.includes(search);
+
+      if (!filterDate) return matchesSearch;
+
+      const saleDate = new Date(sale.createdAt).toISOString().split('T')[0];
+      return matchesSearch && saleDate === filterDate;
+    });
+  }, [sales, searchQuery, filterDate]);
+
+  const stats = useMemo(() => {
+    const total = filteredSales.reduce(
+      (acc, curr) => acc + parseFloat(curr.finalAmount),
+      0,
+    );
+    return {total, count: filteredSales.length};
+  }, [filteredSales]);
+
   const openBill = (sale: any) => {
     setSelectedSale(sale);
     setViewModalVisible(true);
@@ -50,7 +78,7 @@ export default function SalesListScreen() {
     if (!selectedSale) return;
     try {
       const printItems = selectedSale.items.map((i: any) => ({
-        name: i.product?.name || 'Unknown',
+        name: i.product?.name || 'Product',
         quantity: i.quantity,
         price: parseFloat(i.price),
       }));
@@ -68,125 +96,145 @@ export default function SalesListScreen() {
   };
 
   const renderSaleItem = ({item}: {item: any}) => (
-    <View style={styles.saleCard}>
-      <View style={styles.cardHeader}>
-        <View style={{flex: 1}}>
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => openBill(item)}
+      style={styles.saleCard}>
+      <View style={styles.cardMain}>
+        <View>
           <Text style={styles.billNumber}>Bill #{item.billNumber}</Text>
+          <Text style={styles.cashierName}>
+            By {item.user?.name || 'Admin'}
+          </Text>
           <Text style={styles.dateText}>
-            {new Date(item.createdAt).toLocaleDateString()} • {item.paymentMode}
+            {new Date(item.createdAt).toLocaleDateString()} •{' '}
+            {new Date(item.createdAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </Text>
         </View>
         <View style={{alignItems: 'flex-end'}}>
           <Text style={styles.finalAmt}>
             ₹{parseFloat(item.finalAmount).toFixed(2)}
           </Text>
-          <TouchableOpacity
-            onPress={() => openBill(item)}
-            style={styles.viewBtn}>
-            <Text style={styles.viewBtnText}>VIEW BILL</Text>
-          </TouchableOpacity>
+          <View
+            style={[
+              styles.payBadge,
+              {
+                backgroundColor:
+                  item.paymentMode === 'CASH' ? '#E0F2FE' : '#DCFCE7',
+              },
+            ]}>
+            <Text style={styles.payText}>{item.paymentMode}</Text>
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
-    <MainLayout title="Sales Records" showBack>
+    <MainLayout title="Sales History" showBack>
       <View style={styles.container}>
+        {/* TOP FILTER BAR */}
+        <View style={styles.headerFilter}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search Bill # or Cashier..."
+            placeholderTextColor="#94a3b8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <View style={styles.statsRow}>
+            <Text style={styles.statsText}>Showing {stats.count} bills</Text>
+            <Text style={styles.totalRevenue}>
+              Total: ₹{stats.total.toLocaleString()}
+            </Text>
+          </View>
+        </View>
+
         <FlatList
-          data={sales}
+          data={filteredSales}
           keyExtractor={item => item.id}
           renderItem={renderSaleItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={styles.listPadding}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => fetchSales(false)}
             />
           }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No matching sales found</Text>
+            </View>
+          }
         />
 
-        {/* BILL DETAIL MODAL */}
+        {/* RE-USED BILL MODAL (Updated for your data) */}
         <Modal visible={viewModalVisible} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.billModal}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Tax Invoice</Text>
+                <Text style={styles.modalTitle}>Order Details</Text>
                 <TouchableOpacity onPress={() => setViewModalVisible(false)}>
                   <Text style={styles.closeX}>✕</Text>
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={styles.billScroll}>
-                <Text style={styles.storeName}>RETAIL STORE</Text>
-                <Text style={styles.billMeta}>
-                  Bill No: {selectedSale?.billNumber}
-                </Text>
-                <Text style={styles.billMeta}>
-                  Date:{' '}
-                  {selectedSale &&
-                    new Date(selectedSale.createdAt).toLocaleString()}
-                </Text>
-                <Text style={styles.billMeta}>
-                  Cashier: {selectedSale?.user?.name}
-                </Text>
-
-                <View style={styles.billDivider} />
-
-                {/* Table Header */}
-                <View style={styles.tableRow}>
-                  <Text style={[styles.tableH, {flex: 2}]}>ITEM</Text>
-                  <Text style={[styles.tableH, {flex: 1, textAlign: 'center'}]}>
-                    QTY
+              <ScrollView>
+                <View style={styles.receiptHeader}>
+                  <Text style={styles.storeName}>RETAIL STORE</Text>
+                  <Text style={styles.receiptMeta}>
+                    Bill No: {selectedSale?.billNumber}
                   </Text>
-                  <Text style={[styles.tableH, {flex: 1, textAlign: 'right'}]}>
-                    TOTAL
+                  <Text style={styles.receiptMeta}>
+                    Date:{' '}
+                    {selectedSale &&
+                      new Date(selectedSale.createdAt).toLocaleString()}
                   </Text>
                 </View>
 
-                {selectedSale?.items.map((item: any) => (
-                  <View key={item.id} style={styles.tableRow}>
+                <View style={styles.divider} />
+
+                {selectedSale?.items.map((item: any, idx: number) => (
+                  <View key={idx} style={styles.itemRow}>
                     <View style={{flex: 2}}>
-                      <Text style={styles.itemTitle}>{item.product?.name}</Text>
-                      <Text style={styles.itemRate}>
-                        ₹{parseFloat(item.price).toFixed(2)}
+                      <Text style={styles.productName}>
+                        {item.product?.name || 'General Item'}
+                      </Text>
+                      <Text style={styles.productSub}>
+                        ₹{parseFloat(item.price).toFixed(2)} x {item.quantity}
                       </Text>
                     </View>
-                    <Text style={[styles.itemQty, {flex: 1}]}>
-                      {item.quantity}
-                    </Text>
-                    <Text style={[styles.itemTotal, {flex: 1}]}>
+                    <Text style={styles.itemTotal}>
                       ₹{(item.quantity * parseFloat(item.price)).toFixed(2)}
                     </Text>
                   </View>
                 ))}
 
-                <View style={styles.billDivider} />
+                <View style={[styles.divider, {marginVertical: 20}]} />
 
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Subtotal</Text>
-                  <Text style={styles.summaryValue}>
-                    ₹{parseFloat(selectedSale?.totalAmount || 0).toFixed(2)}
-                  </Text>
+                <View style={styles.rowBetween}>
+                  <Text>Subtotal</Text>
+                  <Text>₹{selectedSale?.totalAmount}</Text>
                 </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Discount</Text>
-                  <Text style={[styles.summaryValue, {color: 'red'}]}>
-                    -₹{parseFloat(selectedSale?.discount || 0).toFixed(2)}
-                  </Text>
+                <View style={styles.rowBetween}>
+                  <Text>Discount</Text>
+                  <Text style={{color: 'red'}}>-₹{selectedSale?.discount}</Text>
                 </View>
-                <View style={[styles.summaryRow, {marginTop: 10}]}>
+                <View style={[styles.rowBetween, {marginTop: 10}]}>
                   <Text style={styles.grandLabel}>GRAND TOTAL</Text>
-                  <Text style={styles.grandValue}>
-                    ₹{parseFloat(selectedSale?.finalAmount || 0).toFixed(2)}
+                  <Text style={styles.grandPrice}>
+                    ₹{selectedSale?.finalAmount}
                   </Text>
                 </View>
               </ScrollView>
 
               <TouchableOpacity
-                style={styles.printFullBtn}
+                style={styles.printBtn}
                 onPress={handlePrintFromModal}>
-                <Text style={styles.printFullText}>🖨️ PRINT RECEIPT</Text>
+                <Text style={styles.printBtnText}>PRINT INVOICE</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -197,39 +245,72 @@ export default function SalesListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f8fafc'},
-  listContent: {padding: 16},
+  container: {flex: 1, backgroundColor: '#F8FAFC'},
+  headerFilter: {
+    backgroundColor: '#FFF',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  searchInput: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    height: 45,
+    fontSize: 14,
+    color: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  statsText: {fontSize: 12, color: '#64748B', fontWeight: '600'},
+  totalRevenue: {fontSize: 14, fontWeight: '800', color: '#2563EB'},
+
+  listPadding: {padding: 12},
   saleCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#E2E8F0',
+    elevation: 2,
   },
-  billNumber: {fontSize: 14, fontWeight: '800', color: '#1e293b'},
-  dateText: {fontSize: 12, color: '#94a3b8', marginTop: 2},
-  finalAmt: {fontSize: 16, fontWeight: '900', color: '#0f172a'},
-  viewBtn: {
-    marginTop: 8,
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 4,
+  cardMain: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  viewBtnText: {fontSize: 10, fontWeight: '800', color: '#2563eb'},
+  billNumber: {fontSize: 15, fontWeight: 'bold', color: '#0F172A'},
+  cashierName: {fontSize: 12, color: '#64748B', marginVertical: 2},
+  dateText: {fontSize: 11, color: '#94A3B8'},
+  finalAmt: {fontSize: 18, fontWeight: '900', color: '#0F172A'},
+  payBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 5,
+    marginTop: 5,
+  },
+  payText: {fontSize: 10, fontWeight: 'bold', color: '#1E293B'},
 
-  // Modal Styles
+  emptyState: {alignItems: 'center', marginTop: 50},
+  emptyText: {color: '#94A3B8'},
+
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   billModal: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    height: '85%',
+    height: '80%',
     padding: 20,
   },
   modalHeader: {
@@ -237,49 +318,39 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  modalTitle: {fontSize: 18, fontWeight: '900', color: '#0f172a'},
-  closeX: {fontSize: 20, color: '#94a3b8', fontWeight: 'bold'},
-
-  billScroll: {flex: 1},
-  storeName: {
-    fontSize: 20,
-    fontWeight: '900',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  billMeta: {fontSize: 12, color: '#64748b', textAlign: 'center'},
-  billDivider: {
+  modalTitle: {fontSize: 18, fontWeight: 'bold'},
+  closeX: {fontSize: 22, color: '#94A3B8'},
+  receiptHeader: {alignItems: 'center', marginBottom: 15},
+  storeName: {fontSize: 18, fontWeight: '900'},
+  receiptMeta: {fontSize: 12, color: '#64748B'},
+  divider: {
     height: 1,
-    backgroundColor: '#e2e8f0',
-    marginVertical: 15,
+    backgroundColor: '#E2E8F0',
     borderStyle: 'dashed',
     borderWidth: 1,
     borderRadius: 1,
   },
-
-  tableRow: {flexDirection: 'row', marginBottom: 12, alignItems: 'center'},
-  tableH: {fontSize: 11, fontWeight: '800', color: '#94a3b8'},
-  itemTitle: {fontSize: 14, fontWeight: '700', color: '#1e293b'},
-  itemRate: {fontSize: 11, color: '#94a3b8'},
-  itemQty: {textAlign: 'center', fontSize: 14, fontWeight: '600'},
-  itemTotal: {textAlign: 'right', fontSize: 14, fontWeight: '700'},
-
-  summaryRow: {
+  itemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+  },
+  productName: {fontSize: 14, fontWeight: '700', color: '#1E293B'},
+  productSub: {fontSize: 12, color: '#94A3B8'},
+  itemTotal: {fontSize: 14, fontWeight: 'bold'},
+  rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 5,
   },
-  summaryLabel: {fontSize: 14, color: '#64748b'},
-  summaryValue: {fontSize: 14, fontWeight: '600'},
-  grandLabel: {fontSize: 16, fontWeight: '900', color: '#0f172a'},
-  grandValue: {fontSize: 22, fontWeight: '900', color: '#2563eb'},
-
-  printFullBtn: {
-    backgroundColor: '#000',
+  grandLabel: {fontSize: 16, fontWeight: 'bold'},
+  grandPrice: {fontSize: 22, fontWeight: '900', color: '#2563EB'},
+  printBtn: {
+    backgroundColor: '#1E293B',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
   },
-  printFullText: {color: '#fff', fontWeight: '900', fontSize: 16},
+  printBtnText: {color: '#FFF', fontWeight: 'bold', fontSize: 16},
 });

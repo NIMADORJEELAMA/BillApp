@@ -52,6 +52,7 @@ export default function ProductListScreen({navigation}: any) {
           p.barcode.toLowerCase().includes(searchQuery.toLowerCase())),
     );
   }, [products, searchQuery]);
+  console.log('filteredProducts', filteredProducts);
 
   const openEditModal = (item: any) => {
     setSelectedProduct(item);

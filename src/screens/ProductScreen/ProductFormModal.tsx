@@ -48,6 +48,8 @@ export default function ProductFormModal({
     categoryId: '',
   });
 
+  console.log('form', form);
+
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
@@ -76,18 +78,6 @@ export default function ProductFormModal({
     setSearchQuery(cat.name);
     setIsDropdownVisible(false);
   };
-  const DEMO_CATEGORIES = [
-    {label: 'Fruits & Vegetables', value: 'cat_01'},
-    {label: 'Dairy & Eggs', value: 'cat_02'},
-    {label: 'Beverages', value: 'cat_03'},
-    {label: 'Meat & Seafood', value: 'cat_04'},
-    {label: 'Bakery', value: 'cat_05'},
-    {label: 'Frozen Foods', value: 'cat_06'},
-    {label: 'Pantry Staples', value: 'cat_07'},
-    {label: 'Snacks & Sweets', value: 'cat_08'},
-    {label: 'Household Supplies', value: 'cat_09'},
-    {label: 'Personal Care', value: 'cat_10'},
-  ];
 
   const isCreatingNewCategory =
     searchQuery.length > 0 &&
@@ -106,21 +96,6 @@ export default function ProductFormModal({
         unit: product.unit || 'KG',
         categoryId: product.categoryId || '',
       });
-
-      if (product.categoryId && categories.length > 0) {
-        const existingCat = categories.find(c => c.id === product.categoryId);
-
-        if (existingCat) {
-          setSelectedCategory(existingCat);
-          setSearchQuery(existingCat.name);
-        } else {
-          setSelectedCategory(null);
-          setSearchQuery('');
-        }
-      } else {
-        setSelectedCategory(null);
-        setSearchQuery('');
-      }
     } else {
       setForm({
         name: '',
@@ -134,8 +109,19 @@ export default function ProductFormModal({
       setSelectedCategory(null);
       setSearchQuery('');
     }
-  }, [isVisible, product, categories]);
+  }, [isVisible, product]);
+  useEffect(() => {
+    if (!product || categories.length === 0) return;
 
+    if (product.categoryId) {
+      const existingCat = categories.find(c => c.id === product.categoryId);
+
+      if (existingCat) {
+        setSelectedCategory(existingCat);
+        setSearchQuery(existingCat.name);
+      }
+    }
+  }, [categories, product]);
   const handleInputChange = (field: string, value: string) => {
     setForm(prev => ({...prev, [field]: value}));
   };
@@ -150,42 +136,80 @@ export default function ProductFormModal({
 
     handleInputChange('barcode', newBarcode);
   };
+  // Inside ProductFormModal.tsx
+  const handleCategorySelect = async (item: any) => {
+    if (item.isNew) {
+      setLoading(true); // Show loader while creating category
+      try {
+        const response = await axiosInstance.post('/categories', {
+          name: item.name.trim(),
+        });
 
+        const newCategory = response.data; // Expected: { id: "123", name: "Category Name" }
+
+        // Update the list so it appears in the dropdown next time
+        setCategories(prev => [...prev, newCategory]);
+
+        // Select this new category immediately
+        setSelectedCategory(newCategory);
+        setSearchQuery(newCategory.name);
+
+        // CRITICAL: Update the form state with the new ID
+        setForm(prev => ({
+          ...prev,
+          categoryId: newCategory.id || newCategory._id,
+        }));
+
+        Toast.show({type: 'success', text1: 'Category created and selected'});
+      } catch (error) {
+        Toast.show({type: 'error', text1: 'Failed to create category'});
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Standard selection for existing categories
+      setSelectedCategory(item);
+      setForm(prev => ({...prev, categoryId: item.id || item._id}));
+      setSearchQuery(item.name);
+    }
+  };
   const handleSave = async (shouldPrint: boolean = false) => {
     if (!form.name || !form.price || !form.stockQty) {
       Toast.show({type: 'error', text1: 'Please fill required fields'});
       return;
     }
+    if (!form.categoryId) {
+      Toast.show({type: 'error', text1: 'Please select a category'});
+      return;
+    }
 
     setLoading(true);
     try {
-      let finalCategoryId = form.categoryId;
-
-      if (!selectedCategory && isCreatingNewCategory) {
-        const catRes = await axiosInstance.post('/categories', {
-          name: searchQuery.trim(),
-        });
-        finalCategoryId = catRes.data.id;
-      }
+      // We no longer need to check 'isCreatingNewCategory' here
+      // because handleCategorySelect already handled it.
 
       const payload = {
         ...form,
-        categoryId: finalCategoryId || null,
+        // Ensure prices and qty are numbers
         price: parseFloat(form.price),
         costPrice: parseFloat(form.costPrice) || 0,
         stockQty: parseInt(form.stockQty, 10),
       };
 
       let response;
-
-      if (product?._id) {
-        response = await axiosInstance.put(`/products/${product._id}`, payload);
+      if (product?.id) {
+        response = await axiosInstance.patch(
+          `/products/${product.id}`,
+          payload,
+        );
+        console.log('response', response);
       } else {
         response = await axiosInstance.post('/products', payload);
+        console.log('response 123', response);
       }
 
       const savedData = response.data;
-
       Toast.show({
         type: 'success',
         text1: product ? 'Product updated!' : 'Product created!',
@@ -193,8 +217,7 @@ export default function ProductFormModal({
 
       if (shouldPrint) {
         setCreatedProduct({
-          name: payload.name,
-          price: payload.price,
+          ...payload,
           barcode: savedData.barcode || payload.barcode,
         });
         setShowPrintModal(true);
@@ -203,6 +226,7 @@ export default function ProductFormModal({
         onClose();
       }
     } catch (error: any) {
+      console.log('error', error);
       Toast.show({
         type: 'error',
         text1: 'Save failed',
@@ -276,18 +300,24 @@ export default function ProductFormModal({
               {/* CARD 2 */}
               <View style={styles.card}>
                 <View style={styles.barcodeRow}>
-                  <AppInput
-                    label="Barcode" // Empty label if you want to use the card's header logic
-                    containerStyle={{flex: 1, marginBottom: 0}}
-                    value={form.barcode}
-                    placeholder="Enter barcode"
-                    onChangeText={v => handleInputChange('barcode', v)}
-                  />
-                  <TouchableOpacity
-                    style={styles.generateButton}
-                    onPress={generateBarcode}>
-                    <Text style={styles.generateButtonText}>GEN</Text>
-                  </TouchableOpacity>
+                  <View style={{flex: 1}}>
+                    <AppInput
+                      label="Barcode" // Empty label if you want to use the card's header logic
+                      containerStyle={{flex: 1, marginBottom: 0}}
+                      value={form.barcode}
+                      placeholder="Enter barcode"
+                      onChangeText={v => handleInputChange('barcode', v)}
+                    />
+                  </View>
+                  <View style={{justifyContent: 'center'}}>
+                    <Text style={styles.generateButtonText}>''</Text>
+
+                    <TouchableOpacity
+                      style={styles.generateButton}
+                      onPress={generateBarcode}>
+                      <Text style={styles.generateButtonText}>GEN</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <View style={styles.row}>
@@ -312,76 +342,46 @@ export default function ProductFormModal({
                     />
                   </View>
                 </View>
-              </View>
-              <View style={{zIndex: 5000, elevation: 5}}>
-                <SearchableDropdown
-                  label="Category"
-                  value={searchQuery}
-                  isVisible={isDropdownVisible}
-                  data={filteredCategories}
-                  isCreatingNew={isCreatingNewCategory}
-                  onFocus={() => setIsDropdownVisible(true)}
-                  onSelectItem={cat => handleSelectCategory(cat)}
-                  onChangeText={text => {
-                    setSearchQuery(text);
-                    setSelectedCategory(null);
-                    setForm(prev => ({...prev, categoryId: ''}));
-                    setIsDropdownVisible(true);
-                  }}
-                />
-              </View>
-              {/* <View style={styles.card}>
-              <Text style={styles.label}>Category</Text>
-              <TextInput
-                style={styles.input}
-                value={searchQuery}
-                onFocus={() => setIsDropdownVisible(true)}
-                onChangeText={text => {
-                  setSearchQuery(text);
-                  setSelectedCategory(null);
-                  setForm(prev => ({...prev, categoryId: ''}));
-                  setIsDropdownVisible(true);
-                }}
-              />
+                <View style={{zIndex: 5000, elevation: 5}}>
+                  <SearchableDropdown
+                    label="Category"
+                    value={searchQuery} // Shows the name in the "trigger" box
+                    data={filteredCategories}
+                    isCreatingNew={isCreatingNewCategory}
+                    onChangeText={text => {
+                      setSearchQuery(text);
 
-              {isDropdownVisible && (
-                <View style={styles.dropdownList}>
-                  <ScrollView style={{maxHeight: 200}}>
-                    {filteredCategories.map(cat => (
-                      <TouchableOpacity
-                        key={cat.id}
-                        style={styles.dropdownItem}
-                        onPress={() => handleSelectCategory(cat)}>
-                        <Text>{cat.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-
-                    {isCreatingNewCategory && (
-                      <Text style={styles.createItemText}>
-                        + Create "{searchQuery}"
-                      </Text>
-                    )}
-                  </ScrollView>
+                      // Only clear if user actually changed selection manually
+                      if (selectedCategory && selectedCategory.name !== text) {
+                        setSelectedCategory(null);
+                        setForm(prev => ({...prev, categoryId: ''}));
+                      }
+                    }}
+                    onSelectItem={handleCategorySelect} // This handles the API call
+                  />
                 </View>
-              )}
-            </View> */}
+              </View>
 
               {/* BUTTONS */}
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={() => handleSave(false)}>
-                <Text style={styles.secondaryText}>JUST CREATE</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, {flex: 1, marginBottom: 0}]}
+                  onPress={() => handleSave(false)}
+                  disabled={loading}>
+                  <Text style={styles.secondaryText}>JUST CREATE</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={() => handleSave(true)}>
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.primaryText}>SAVE & PRINT</Text>
-                )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.primaryButton, {flex: 1, marginBottom: 0}]}
+                  onPress={() => handleSave(true)}
+                  disabled={loading}>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.primaryText}>SAVE & PRINT</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </ScrollView>
           </KeyboardAvoidingView>
 
@@ -414,7 +414,8 @@ const styles = StyleSheet.create({
 
   container: {
     padding: 16,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#f5f5f5',
+    flexGrow: 1,
   },
 
   card: {
@@ -423,21 +424,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     elevation: 3,
-  },
-
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-
-  input: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    color: '#1e293b',
   },
 
   inputFocus: {
@@ -451,13 +437,17 @@ const styles = StyleSheet.create({
 
   barcodeRow: {
     flexDirection: 'row',
+    marginBottom: 8,
   },
 
   generateButton: {
     marginLeft: 8,
-    padding: 12,
+    padding: 14,
     backgroundColor: '#2563eb',
     borderRadius: 10,
+
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   generateButtonText: {
@@ -484,28 +474,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12, // Space between buttons
+    marginTop: 20, // Space above the button group
+    marginBottom: 30, // Bottom padding for the ScrollView
+  },
   primaryButton: {
     backgroundColor: '#2563eb',
-    padding: 16,
+    height: 54, // Consistent height
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
+    elevation: 2, // Subtle shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-
   secondaryButton: {
-    backgroundColor: '#e2e8f0',
-    padding: 16,
+    backgroundColor: '#fff', // White background looks cleaner for secondary
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    height: 54,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
   },
-
   primaryText: {
     color: '#fff',
     fontWeight: '700',
+    fontSize: 14,
+    letterSpacing: 0.5,
   },
-
   secondaryText: {
+    color: '#475569',
     fontWeight: '600',
+    fontSize: 14,
   },
 });
