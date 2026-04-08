@@ -122,7 +122,6 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
     // marginTop: 60,
-    // marginTop: 60,
 
     // paddingTop: 80,
     // paddingHorizontal: 20,
