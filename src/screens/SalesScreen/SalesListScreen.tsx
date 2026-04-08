@@ -40,6 +40,7 @@ export default function SalesListScreen() {
 
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
+  console.log('selectedSale', selectedSale);
 
   // 1. Single Source of Truth: Fetch from API
   // const fetchSales = useCallback(
@@ -359,6 +360,10 @@ export default function SalesListScreen() {
                 <View style={styles.rowBetween}>
                   <Text>Discount</Text>
                   <Text style={{color: 'red'}}>-₹{selectedSale?.discount}</Text>
+                </View>
+                <View style={styles.rowBetween}>
+                  <Text>GST @ {selectedSale?.gstPercentage}%</Text>
+                  <Text>₹{selectedSale?.taxAmount}</Text>
                 </View>
                 <View style={[styles.rowBetween, {marginTop: 10}]}>
                   <Text style={styles.grandLabel}>GRAND TOTAL</Text>

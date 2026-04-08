@@ -27,6 +27,7 @@ import ProductPickerModal from '../ProductScreen/ProductPickerModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScanIcon from '../../assets/Icons/scan.svg';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
+import {set} from 'date-fns';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
@@ -53,6 +54,12 @@ export default function SalesScreen() {
   const [manualDiscount, setManualDiscount] = useState('0');
   const [gstPercentInput, setGstPercentInput] = useState('0');
 
+  const resetForm = () => {
+    setDiscountPercent('0');
+    setManualDiscount('0');
+    setGstPercentInput('0');
+  };
+
   // Update Calculations
   const subtotal = useMemo(
     () => cart.reduce((s, i) => s + i.price * i.quantity, 0),
@@ -77,10 +84,20 @@ export default function SalesScreen() {
     }
   };
 
-  const finalDiscount = parseFloat(manualDiscount) || 0;
-  const taxableAmount = Math.max(0, subtotal - finalDiscount);
-  const finalGstAmount =
-    (taxableAmount * (parseFloat(gstPercentInput) || 0)) / 100;
+  const finalDiscount = useMemo(
+    () => parseFloat(manualDiscount) || 0,
+    [manualDiscount],
+  );
+  const taxableAmount = useMemo(
+    () => Math.max(0, subtotal - finalDiscount),
+    [subtotal, finalDiscount],
+  );
+
+  const finalGstAmount = useMemo(() => {
+    const gstPercent = parseFloat(gstPercentInput) || 0;
+    return (taxableAmount * gstPercent) / 100;
+  }, [taxableAmount, gstPercentInput]);
+
   const finalAmount = taxableAmount + finalGstAmount;
 
   // --- Helpers ---
@@ -128,20 +145,20 @@ export default function SalesScreen() {
     setLoading(true);
     try {
       const payload = {
-        userId: 'a5d0861f-0248-45cb-ba23-9bf3844ffc1a', // Suggestion: Get from Auth state
         paymentMode: 'CASH',
         totalAmount: subtotal,
-        discount,
-        taxAmount: finalGstAmount, // Add this
-        gstPercentage: gstPercentInput,
-        finalAmount,
+        // FIX: Use finalDiscount (local state) instead of the Redux 'discount' variable
+        discount: finalDiscount,
+        taxAmount: finalGstAmount,
+        gstPercentage: parseFloat(gstPercentInput) || 0,
+        finalAmount: finalAmount,
         items: cart.map((i: any) => ({
           productId: i.productId,
           quantity: i.quantity,
           price: i.price,
         })),
       };
-
+      console.log('payload', payload);
       const response = await axiosInstance.post('/sales', payload);
 
       if (response.status === 201 || response.status === 200) {
@@ -170,6 +187,8 @@ export default function SalesScreen() {
           }
         }
         dispatch(clearCart());
+        resetForm();
+
         Toast.show({type: 'success', text1: 'Transaction Complete'});
       }
     } catch (e: any) {
@@ -328,7 +347,6 @@ export default function SalesScreen() {
                   ₹{subtotal.toFixed(2)}
                 </Text>
               </View>
-
               {/* Discount */}
               {/* Discount Row */}
               <View style={styles.editRow}>
@@ -357,23 +375,34 @@ export default function SalesScreen() {
                   </View>
                 </View>
               </View>
-
               {/* GST Row */}
               <View style={styles.editRow}>
                 <Text style={styles.summaryLabel}>GST</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.inlineInput}
-                    keyboardType="numeric"
-                    value={gstPercentInput}
-                    onChangeText={setGstPercentInput}
-                  />
-                  <Text style={styles.inputSuffix}>%</Text>
+                <View style={styles.inputGroup}>
+                  {/* Percentage Input */}
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.inlineInput}
+                      keyboardType="numeric"
+                      value={gstPercentInput}
+                      onChangeText={setGstPercentInput}
+                    />
+                    <Text style={styles.inputSuffix}>%</Text>
+                  </View>
+
+                  {/* Amount Input */}
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.inputPrefix}>₹</Text>
+                    <TextInput
+                      style={[styles.inlineInput, {color: '#94a3b8'}]}
+                      keyboardType="numeric"
+                      value={finalGstAmount.toFixed(2)}
+                      editable={false}
+                    />
+                  </View>
                 </View>
               </View>
-
               <View style={styles.divider} />
-
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabelMain}>Total</Text>
                 <Text style={styles.totalAmountMain}>
