@@ -126,6 +126,8 @@ const styles = StyleSheet.create({
     // paddingTop: 80,
     // paddingTop: 80,
 
+    // paddingTop: 80,
+
     // paddingHorizontal: 20,
     // width: '100%',
     // backgroundColor: 'yellow',
