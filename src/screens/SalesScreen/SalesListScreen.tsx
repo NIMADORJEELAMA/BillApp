@@ -9,72 +9,147 @@ import {
   Modal,
   ScrollView,
   TextInput,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import {connectAndPrint} from '../../services/PrinterService';
 import Toast from 'react-native-toast-message';
-// Note: If you want actual date pickers, import RNDateTimePicker here
+
+// Move static components outside to prevent re-creation
+const ListEmptyComponent = () => (
+  <View style={styles.emptyState}>
+    <Text style={styles.emptyText}>No matching sales found</Text>
+  </View>
+);
 
 export default function SalesListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sales, setSales] = useState<any[]>([]);
+  console.log('sales', sales);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterDate, setFilterDate] = useState<string | null>(null); // YYYY-MM-DD
+  console.log('searchQuery', searchQuery);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState<'start' | 'end' | null>(null);
 
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
 
-  const fetchSales = useCallback(async (showSpinner = true) => {
-    try {
-      if (showSpinner) setLoading(true);
-      const response = await axiosInstance.get('/sales');
-      setSales(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      Toast.show({type: 'error', text1: 'Failed to load sales'});
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  // 1. Single Source of Truth: Fetch from API
+  // const fetchSales = useCallback(
+  //   async (showSpinner = true) => {
+  //     try {
+  //       if (showSpinner) setLoading(true);
 
+  //       const params = {
+  //         ...(searchQuery && {search: searchQuery}),
+  //         ...(startDate && {startDate: startDate.toISOString()}),
+  //         ...(endDate && {endDate: endDate.toISOString()}),
+  //       };
+
+  //       const response = await axiosInstance.get('/sales', {params});
+  //       setSales(Array.isArray(response.data) ? response.data : []);
+  //     } catch (error) {
+  //       Toast.show({type: 'error', text1: 'Failed to load sales'});
+  //     } finally {
+  //       setLoading(false);
+  //       setRefreshing(false);
+  //     }
+  //   },
+  //   [searchQuery, startDate, endDate],
+  // );
+
+  // 2. Debounced Effect
+  // useEffect(() => {
+  //   const handler = setTimeout(() => fetchSales(true), 500);
+  //   return () => clearTimeout(handler);
+  // }, [fetchSales]);
+  function useDebounce(value: any, delay: number) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+
+      return () => clearTimeout(handler);
+    }, [value, delay]);
+
+    return debouncedValue;
+  }
+  const debouncedSearch = useDebounce(searchQuery, 400);
+  const debouncedStartDate = useDebounce(startDate, 400);
+  const debouncedEndDate = useDebounce(endDate, 400);
+  const filters = useMemo(() => {
+    return {
+      ...(debouncedSearch && {search: debouncedSearch}),
+      ...(debouncedStartDate && {
+        startDate: debouncedStartDate.toISOString(),
+      }),
+      ...(debouncedEndDate && {
+        endDate: debouncedEndDate.toISOString(),
+      }),
+    };
+  }, [debouncedSearch, debouncedStartDate, debouncedEndDate]);
+  const fetchSales = useCallback(
+    async (showSpinner = true) => {
+      try {
+        if (showSpinner) setLoading(true);
+
+        const response = await axiosInstance.get('/sales', {
+          params: filters,
+        });
+        console.log('API CALL', filters);
+
+        setSales(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        Toast.show({type: 'error', text1: 'Failed to load sales'});
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [filters],
+  );
+  console.log('fetchSales', fetchSales);
   useEffect(() => {
-    fetchSales();
+    fetchSales(true);
   }, [fetchSales]);
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // end of day
 
-  // Optimized Filter Logic
-  const filteredSales = useMemo(() => {
-    return sales.filter(sale => {
-      const billNo = sale.billNumber.toString();
-      const cashier = sale.user?.name?.toLowerCase() || '';
-      const search = searchQuery.toLowerCase();
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(today.getDate() - 7);
+    oneWeekAgo.setHours(0, 0, 0, 0); // start of day
 
-      const matchesSearch = billNo.includes(search) || cashier.includes(search);
+    setStartDate(oneWeekAgo);
+    setEndDate(today);
+  }, []);
+  // 3. Optimized Handlers
+  const onDateChange = useCallback(
+    (event: any, selectedDate?: Date) => {
+      if (Platform.OS === 'android') setShowPicker(null);
+      if (event.type === 'set' && selectedDate) {
+        if (showPicker === 'start') setStartDate(selectedDate);
+        else if (showPicker === 'end') setEndDate(selectedDate);
+      }
+    },
+    [showPicker],
+  );
 
-      if (!filterDate) return matchesSearch;
-
-      const saleDate = new Date(sale.createdAt).toISOString().split('T')[0];
-      return matchesSearch && saleDate === filterDate;
-    });
-  }, [sales, searchQuery, filterDate]);
-
-  const stats = useMemo(() => {
-    const total = filteredSales.reduce(
-      (acc, curr) => acc + parseFloat(curr.finalAmount),
-      0,
-    );
-    return {total, count: filteredSales.length};
-  }, [filteredSales]);
-
-  const openBill = (sale: any) => {
+  const openBill = useCallback((sale: any) => {
     setSelectedSale(sale);
     setViewModalVisible(true);
-  };
+  }, []);
 
-  const handlePrintFromModal = async () => {
+  const handlePrintFromModal = useCallback(async () => {
     if (!selectedSale) return;
     try {
       const printItems = selectedSale.items.map((i: any) => ({
@@ -93,50 +168,72 @@ export default function SalesListScreen() {
     } catch (error) {
       Toast.show({type: 'error', text1: 'Print failed. Check connection.'});
     }
-  };
+  }, [selectedSale]);
 
-  const renderSaleItem = ({item}: {item: any}) => (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={() => openBill(item)}
-      style={styles.saleCard}>
-      <View style={styles.cardMain}>
-        <View>
-          <Text style={styles.billNumber}>Bill #{item.billNumber}</Text>
-          <Text style={styles.cashierName}>
-            By {item.user?.name || 'Admin'}
-          </Text>
-          <Text style={styles.dateText}>
-            {new Date(item.createdAt).toLocaleDateString()} •{' '}
-            {new Date(item.createdAt).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
-        </View>
-        <View style={{alignItems: 'flex-end'}}>
-          <Text style={styles.finalAmt}>
-            ₹{parseFloat(item.finalAmount).toFixed(2)}
-          </Text>
-          <View
-            style={[
-              styles.payBadge,
-              {
-                backgroundColor:
-                  item.paymentMode === 'CASH' ? '#E0F2FE' : '#DCFCE7',
-              },
-            ]}>
-            <Text style={styles.payText}>{item.paymentMode}</Text>
+  // 4. Optimized Stats Calculation
+  const stats = useMemo(() => {
+    return sales.reduce(
+      (acc, curr) => {
+        acc.total += parseFloat(curr.finalAmount || 0);
+        acc.count += 1;
+        return acc;
+      },
+      {total: 0, count: 0},
+    );
+  }, [sales]);
+
+  // 5. Separate Render Item for Performance
+  const SaleItem = React.memo(({item, onPress}: any) => {
+    const isCash = item.paymentMode === 'CASH';
+    const date = new Date(item.createdAt);
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => onPress(item)}
+        style={styles.saleCard}>
+        <View style={styles.cardMain}>
+          <View>
+            <Text style={styles.billNumber}>Bill #{item.billNumber}</Text>
+            <Text style={styles.cashierName}>
+              By {item.user?.name || 'Admin'}
+            </Text>
+            <Text style={styles.dateText}>
+              {date.toLocaleDateString()} •{' '}
+              {date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          </View>
+
+          <View style={{alignItems: 'flex-end'}}>
+            <Text style={styles.finalAmt}>
+              ₹{parseFloat(item.finalAmount).toFixed(2)}
+            </Text>
+
+            <View
+              style={[
+                styles.payBadge,
+                {backgroundColor: isCash ? '#E0F2FE' : '#DCFCE7'},
+              ]}>
+              <Text style={styles.payText}>{item.paymentMode}</Text>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  });
+  const renderSaleItem = useCallback(
+    ({item}: {item: any}) => {
+      return <SaleItem item={item} onPress={openBill} />;
+    },
+    [openBill],
   );
 
   return (
     <MainLayout title="Sales History" showBack>
       <View style={styles.container}>
-        {/* TOP FILTER BAR */}
         <View style={styles.headerFilter}>
           <TextInput
             style={styles.searchInput}
@@ -144,7 +241,33 @@ export default function SalesListScreen() {
             placeholderTextColor="#94a3b8"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            clearButtonMode="while-editing"
           />
+
+          <View style={styles.dateRangeContainer}>
+            <DateButton
+              label="FROM"
+              date={startDate}
+              onPress={() => setShowPicker('start')}
+            />
+            <DateButton
+              label="TO"
+              date={endDate}
+              onPress={() => setShowPicker('end')}
+            />
+
+            {(startDate || endDate) && (
+              <TouchableOpacity
+                style={styles.resetBtn}
+                onPress={() => {
+                  setStartDate(null);
+                  setEndDate(null);
+                }}>
+                <Text style={styles.resetBtnText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           <View style={styles.statsRow}>
             <Text style={styles.statsText}>Showing {stats.count} bills</Text>
             <Text style={styles.totalRevenue}>
@@ -153,11 +276,23 @@ export default function SalesListScreen() {
           </View>
         </View>
 
+        {showPicker && (
+          <DateTimePicker
+            value={(showPicker === 'start' ? startDate : endDate) || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={onDateChange}
+          />
+        )}
+
         <FlatList
-          data={filteredSales}
+          data={sales}
           keyExtractor={item => item.id}
           renderItem={renderSaleItem}
           contentContainerStyle={styles.listPadding}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews={true}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -165,14 +300,16 @@ export default function SalesListScreen() {
             />
           }
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No matching sales found</Text>
-            </View>
+            loading ? (
+              <ActivityIndicator style={{marginTop: 20}} />
+            ) : (
+              ListEmptyComponent
+            )
           }
         />
 
-        {/* RE-USED BILL MODAL (Updated for your data) */}
         <Modal visible={viewModalVisible} animationType="slide" transparent>
+          {/* Modal Content (unchanged but consider moving to a separate file if it gets larger) */}
           <View style={styles.modalOverlay}>
             <View style={styles.billModal}>
               <View style={styles.modalHeader}>
@@ -182,7 +319,7 @@ export default function SalesListScreen() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView>
+              <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.receiptHeader}>
                   <Text style={styles.storeName}>RETAIL STORE</Text>
                   <Text style={styles.receiptMeta}>
@@ -244,6 +381,16 @@ export default function SalesListScreen() {
   );
 }
 
+// Sub-component for Date Buttons
+const DateButton = ({label, date, onPress}: any) => (
+  <TouchableOpacity style={styles.dateBtn} onPress={onPress}>
+    <Text style={styles.dateBtnLabel}>{label}</Text>
+    <Text style={styles.dateBtnValue}>
+      {date ? date.toLocaleDateString() : 'Select'}
+    </Text>
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#F8FAFC'},
   headerFilter: {
@@ -261,16 +408,37 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    marginBottom: 12,
   },
+  dateRangeContainer: {flexDirection: 'row', alignItems: 'center', gap: 8},
+  dateBtn: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    padding: 8,
+    alignItems: 'center',
+  },
+  dateBtnLabel: {fontSize: 9, fontWeight: '800', color: '#94A3B8'},
+  dateBtnValue: {fontSize: 13, fontWeight: '600', color: '#1E293B'},
+  resetBtn: {
+    backgroundColor: '#F1F5F9',
+    width: 35,
+    height: 35,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resetBtnText: {color: '#64748B', fontWeight: 'bold'},
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 16,
     alignItems: 'center',
   },
   statsText: {fontSize: 12, color: '#64748B', fontWeight: '600'},
   totalRevenue: {fontSize: 14, fontWeight: '800', color: '#2563EB'},
-
   listPadding: {padding: 12},
   saleCard: {
     backgroundColor: '#FFF',
@@ -280,6 +448,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   cardMain: {
     flexDirection: 'row',
@@ -297,10 +469,8 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   payText: {fontSize: 10, fontWeight: 'bold', color: '#1E293B'},
-
   emptyState: {alignItems: 'center', marginTop: 50},
   emptyText: {color: '#94A3B8'},
-
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',

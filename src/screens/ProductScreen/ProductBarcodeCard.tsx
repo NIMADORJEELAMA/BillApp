@@ -87,9 +87,9 @@ const ProductBarcodeCard = ({isVisible, onClose, product}: Props) => {
 
       // 1. Print Text Header
       // Using \n for spacing instead of large empty strings
-      await BTPrinter.printText(
-        `\n<C><B>${product.name}</B></C>\n<C>Price: Rs.${product.price}</C>\n\n`,
-      );
+      // await BTPrinter.printText(
+      //   `\n<C><B>${product.name}</B></C>\n<C>Price: Rs.${product.price}</C>\n\n`,
+      // );
 
       // 2. Small delay before sending Raw Barcode bytes
       await new Promise(res => setTimeout(res, 200));

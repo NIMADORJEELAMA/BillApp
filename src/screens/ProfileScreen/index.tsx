@@ -67,7 +67,7 @@ const ProfileScreen = () => {
               />
               <ButtonPreferences
                 title="Settings"
-                onPress={() => navigation.navigate('Settings')}
+                onPress={() => navigation.navigate('ProfileScreenBms')}
                 LeftIcon={Setting}
                 RightIcon={ArrowRight}
                 // rightLabel="Next"
@@ -122,6 +122,8 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
     // marginTop: 60,
+    // marginTop: 60,
+
     // paddingTop: 80,
     // paddingHorizontal: 20,
     // width: '100%',

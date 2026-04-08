@@ -19,6 +19,7 @@ import ProductQrCodeCard from './ProductQrCodeCard';
 import AppInput from '../../components/Input/AppInput';
 import SearchableDropdown from '../../components/SearchableDropdown';
 import CustomDropdown from '../../components/CustomDropdown';
+import ProductBarcodeCard from './ProductBarcodeCard';
 
 interface ProductFormModalProps {
   isVisible: boolean;
@@ -385,7 +386,7 @@ export default function ProductFormModal({
             </ScrollView>
           </KeyboardAvoidingView>
 
-          <ProductQrCodeCard
+          <ProductBarcodeCard
             isVisible={showPrintModal}
             product={createdProduct}
             onClose={() => {
@@ -394,6 +395,16 @@ export default function ProductFormModal({
               onClose();
             }}
           />
+
+          {/* <ProductQrCodeCard
+       isVisible={showPrintModal}
+        product={createdProduct}
+      onClose={() => {
+          setShowPrintModal(false);
+          onSuccess();
+         onClose();
+       }}
+       /> */}
 
           <Toast />
         </View>

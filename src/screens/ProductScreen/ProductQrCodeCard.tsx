@@ -114,10 +114,10 @@ const ProductQrCodeCard = ({isVisible, onClose, product}: Props) => {
       await BTPrinter.connectPrinter(savedMac);
       await new Promise(res => setTimeout(res, 500));
 
-      // Print the Name and Price
-      await BTPrinter.printText(
-        `<C><B>${product.name}</B></C>\n<C>₹${product.price}</C>\n\n`,
-      );
+      // // Print the Name and Price
+      // await BTPrinter.printText(
+      //   `<C><B>${product.name}</B></C>\n<C>₹${product.price}</C>\n\n`,
+      // );
 
       // Short delay to ensure text finishes before raw bytes arrive
       await new Promise(res => setTimeout(res, 300));
