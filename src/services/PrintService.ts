@@ -15,7 +15,6 @@ export const printSingleLabel = async (product: {
 
   await BTPrinter.connectPrinter(savedMac);
 
-  // Command bytes for the QR Code (extracted from your component)
   const dataBytes = Buffer.from(product.barcode, 'utf-8');
   const storeLen = dataBytes.length + 3;
   const pL = storeLen % 256;
@@ -23,11 +22,26 @@ export const printSingleLabel = async (product: {
 
   const bytes = [
     0x1b,
-    0x40, // Init
+    0x40, // Initialize
     0x1b,
     0x61,
-    0x01, // Center
-    // ... include all your Set QR Size/Model/Error bytes from your original file here
+    0x01, // Center Align
+    0x1b,
+    0x33,
+    0x18, // Set tight line spacing (24 dots)
+
+    // 1. Name
+    ...Buffer.from(`${product.name.substring(0, 20)}\n`),
+
+    // 2. QR Code Config
+    0x1d,
+    0x28,
+    0x6b,
+    0x03,
+    0x00,
+    0x31,
+    0x43,
+    0x05, // Size 5 (Slightly larger)
     0x1d,
     0x28,
     0x6b,
@@ -36,7 +50,7 @@ export const printSingleLabel = async (product: {
     0x31,
     0x50,
     0x30,
-    ...dataBytes, // Store
+    ...dataBytes,
     0x1d,
     0x28,
     0x6b,
@@ -44,18 +58,17 @@ export const printSingleLabel = async (product: {
     0x00,
     0x31,
     0x51,
-    0x30, // Print
+    0x30, // Print QR
+
+    // 3. Price (Immediately follows QR)
+    ...Buffer.from(`${product.price}/-\n`),
+
+    0x1b,
+    0x32, // Reset line spacing
     0x0a,
-    0x0a, // Feed
+    0x0a, // Final feed
   ];
 
   const base64Data = Buffer.from(bytes).toString('base64');
-
-  // Optional: Print Text Header
-  await BTPrinter.printText(
-    `<C>${product.name}</C>\n<C>Rs.${product.price}</C>\n`,
-  );
-
-  // Print QR
   await BTPrinter.printRaw(base64Data);
 };

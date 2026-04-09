@@ -16,6 +16,7 @@ import MainLayout from '../../src/screens/MainLayout';
 import axiosInstance from '../services/axiosInstance';
 import Toast from 'react-native-toast-message';
 import {printSingleLabel} from '../services/PrintService';
+import QRCode from 'react-native-qrcode-svg';
 
 export default function BulkPrintScreen() {
   const [loading, setLoading] = useState(true);
@@ -196,14 +197,18 @@ export default function BulkPrintScreen() {
               {itemsToPrint.map(item => (
                 <View key={item.id} style={styles.previewCard}>
                   <View style={styles.previewInfo}>
-                    <Text style={styles.previewName}>{item.name}</Text>
+                    <Text style={styles.previewName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
                     <Text style={styles.previewPrice}>₹{item.price}</Text>
                     <Text style={styles.previewBarcode}>{item.barcode}</Text>
                   </View>
-                  <View style={styles.qrPlaceholder}>
-                    <Text style={{fontSize: 10, color: '#94a3b8'}}>
-                      QR READY
-                    </Text>
+                  <View style={styles.qrContainer}>
+                    <QRCode
+                      value={item.barcode || '0000'}
+                      size={60} // Bigger size for preview
+                      quietZone={2}
+                    />
                   </View>
                 </View>
               ))}
@@ -323,6 +328,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: '#cbd5e1',
+  },
+  qrContainer: {
+    padding: 5,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   modalFooter: {
     padding: 20,
