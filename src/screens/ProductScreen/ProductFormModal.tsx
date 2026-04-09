@@ -12,6 +12,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from 'react-native';
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
@@ -45,7 +46,7 @@ export default function ProductFormModal({
     costPrice: '',
     barcode: '',
     stockQty: '',
-    unit: 'KG',
+    unit: 'PCS',
     categoryId: '',
   });
 
@@ -94,7 +95,7 @@ export default function ProductFormModal({
         costPrice: product.costPrice?.toString() || '',
         barcode: product.barcode || '',
         stockQty: product.stockQty?.toString() || '',
-        unit: product.unit || 'KG',
+        unit: product.unit || 'PCS',
         categoryId: product.categoryId || '',
       });
     } else {
@@ -104,7 +105,7 @@ export default function ProductFormModal({
         costPrice: '',
         barcode: '',
         stockQty: '',
-        unit: 'KG',
+        unit: 'PCS',
         categoryId: '',
       });
       setSelectedCategory(null);
@@ -132,7 +133,7 @@ export default function ProductFormModal({
       ? form.name.substring(0, 3).toUpperCase().replace(/\s/g, 'X')
       : 'PRD';
 
-    const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const randomStr = Math.random().toString(36).substring(2, 9).toUpperCase();
     const newBarcode = `${prefix}-${randomStr}`;
 
     handleInputChange('barcode', newBarcode);
@@ -383,6 +384,21 @@ export default function ProductFormModal({
                   )}
                 </TouchableOpacity>
               </View>
+              {/* <View>
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    {flex: 1, marginBottom: 0, backgroundColor: '#ef4444'}, // Red background for delete
+                  ]}
+                  onPress={handleDelete}
+                  disabled={loading}>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.primaryText}>Delete</Text>
+                  )}
+                </TouchableOpacity>
+              </View> */}
             </ScrollView>
           </KeyboardAvoidingView>
 
