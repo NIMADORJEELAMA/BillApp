@@ -60,7 +60,7 @@ export const printSingleLabel = async (product: {
     0x51,
     0x30, // Print QR
 
-    // 3. Price (Immediately follows QR)w
+    // 3. Price (Immediately follows QR)
     ...Buffer.from(`${product.price}/-\n`),
 
     0x1b,
