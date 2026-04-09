@@ -15,60 +15,52 @@ export const printSingleLabel = async (product: {
 
   await BTPrinter.connectPrinter(savedMac);
 
-  const dataBytes = Buffer.from(product.barcode, 'utf-8');
-  const storeLen = dataBytes.length + 3;
-  const pL = storeLen % 256;
-  const pH = Math.floor(storeLen / 256);
+  // 1. Setup Barcode Bytes (CODE 128)
+  const barcodeData = Buffer.from(product.barcode, 'utf-8');
 
-  const bytes = [
+  const barcodeBytes = [
+    0x1d,
+    0x68,
+    0x50, // Height: 80 dots (0x50)
+    0x1d,
+    0x77,
+    0x02, // Width: 2 (thinner to ensure it fits on the right)
+    0x1d,
+    0x48,
+    0x02, // Text position: 02 (print human-readable text below barcode)
+    0x1d,
+    0x6b,
+    0x49, // Barcode System: CODE 128 (Format m=73/0x49)
+    barcodeData.length, // Length of data
+    ...barcodeData, // Barcode string
+  ];
+
+  // 2. Build the Command Sequence
+  const commands = [
     0x1b,
     0x40, // Initialize
     0x1b,
     0x61,
-    0x01, // Center Align
+    0x00, // Align Left
+
+    // Text on the left
+    ...Buffer.from(`${product.name}\n`),
+    ...Buffer.from(`Price: Rs.${product.price}\n`),
+
+    // Position "cursor" for Barcode
+    // Moving it to the right (about 160 dots in)
     0x1b,
-    0x33,
-    0x18, // Set tight line spacing (24 dots)
-
-    // 1. Name
-    ...Buffer.from(`${product.name.substring(0, 20)}\n`),
-
-    // 2. QR Code Config
-    0x1d,
-    0x28,
-    0x6b,
-    0x03,
+    0x24,
+    0xa0,
     0x00,
-    0x31,
-    0x43,
-    0x05, // Size 5 (Slightly larger)
-    0x1d,
-    0x28,
-    0x6b,
-    pL,
-    pH,
-    0x31,
-    0x50,
-    0x30,
-    ...dataBytes,
-    0x1d,
-    0x28,
-    0x6b,
-    0x03,
-    0x00,
-    0x31,
-    0x51,
-    0x30, // Print QR
 
-    // 3. Price (Immediately follows QR)
-    ...Buffer.from(`${product.price}/-\n`),
+    ...barcodeBytes,
 
-    0x1b,
-    0x32, // Reset line spacing
     0x0a,
-    0x0a, // Final feed
+    0x0a,
+    0x0a, // Feed paper
   ];
 
-  const base64Data = Buffer.from(bytes).toString('base64');
+  const base64Data = Buffer.from(commands).toString('base64');
   await BTPrinter.printRaw(base64Data);
 };
