@@ -64,7 +64,7 @@ export const printSingleLabel = async (product: {
     ...Buffer.from(`${product.price}/-\n`),
 
     0x1b,
-    0x32, // Reset line spacing
+    0x32, // Reset line spacing w
     0x0a,
     0x0a, // Final feed
   ];
