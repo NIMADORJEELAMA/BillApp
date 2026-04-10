@@ -70,6 +70,7 @@ import {BLEPrinter} from 'react-native-thermal-receipt-printer-image-qr';
 
 export const printSingleLabel = async (viewRef: React.RefObject<any>) => {
   try {
+    await new Promise(resolve => setTimeout(resolve, 100));
     // Capture the hidden LabelTemplate as base64 PNG
     const base64 = await captureRef(viewRef, {
       format: 'png',

@@ -246,6 +246,7 @@ export default function BulkPrintScreen() {
 
                   {/* Hidden ViewShot — this is what actually gets printed */}
                   <ViewShot
+                    collapsable={false}
                     ref={ref => (labelRefs.current[item.id] = ref)}
                     options={{format: 'png', quality: 1.0}}
                     style={styles.hiddenLabel}>
