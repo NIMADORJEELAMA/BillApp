@@ -20,6 +20,7 @@ import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
 import LabelTemplate from '../components/Printer/LabelTemplate';
 import {printSingleLabel} from '../services/PrintService';
+import {BLEPrinter} from 'react-native-thermal-receipt-printer-image-qr';
 
 export default function BulkPrintScreen() {
   const [loading, setLoading] = useState(true);
@@ -91,7 +92,7 @@ export default function BulkPrintScreen() {
 
         // Delay between labels to avoid BT buffer overflow
         if (i < itemsToPrint.length - 1) {
-          await new Promise(res => setTimeout(res, 2500));
+          await new Promise(res => setTimeout(res, 1000));
         }
       }
       Alert.alert('Success', 'All labels printed successfully!');
@@ -236,12 +237,9 @@ export default function BulkPrintScreen() {
                     <Text style={styles.previewPrice}>₹{item.price}</Text>
                     <Text style={styles.previewBarcode}>{item.barcode}</Text>
                   </View>
+
                   <View style={styles.qrContainer}>
-                    <QRCode
-                      value={item.barcode || '0000'}
-                      size={60}
-                      quietZone={2}
-                    />
+                    <QRCode value={item.barcode || '0000'} size={90} ecl="H" />
                   </View>
 
                   {/* Hidden ViewShot — this is what actually gets printed */}

@@ -88,7 +88,7 @@ export const printSingleLabel = async (viewRef: React.RefObject<any>) => {
     });
 
     // Feed and cut
-    await BLEPrinter.printText('\n\n');
+    // await BLEPrinter.printText('\n\n');
     await BLEPrinter.printBill('\x1D\x56\x42\x00');
   } catch (error: any) {
     throw new Error(`Print failed: ${error.message}`);
