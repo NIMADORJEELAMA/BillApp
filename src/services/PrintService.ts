@@ -81,6 +81,8 @@ export const printSingleLabel = async (viewRef: React.RefObject<any>) => {
     // printImageBase64 is the correct method name
 
     // imageWidth: 384 for 58mm | 576 for 80mm printer
+    // imageWidth: 384 for 58mm | 576 for 80mm printer
+
     await BLEPrinter.printImageBase64(base64, {
       imageWidth: 384,
       imageHeight: 0, // 0 = auto height
