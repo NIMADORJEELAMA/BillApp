@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useState, useEffect, useMemo, useRef} from 'react';
 import {
   StyleSheet,
   View,
@@ -15,15 +15,18 @@ import {
 import MainLayout from '../../src/screens/MainLayout';
 import axiosInstance from '../services/axiosInstance';
 import Toast from 'react-native-toast-message';
-import {printSingleLabel} from '../services/PrintService';
+// import {printSingleLabel} from '../services/PrintService';
 import QRCode from 'react-native-qrcode-svg';
+import ViewShot from 'react-native-view-shot';
+import LabelTemplate from '../components/Printer/LabelTemplate';
+import {printSingleLabel} from '../services/PrintService';
 
 export default function BulkPrintScreen() {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
+  const labelRefs = useRef<{[key: string]: any}>({});
   useEffect(() => {
     loadProducts();
   }, []);
@@ -71,26 +74,27 @@ export default function BulkPrintScreen() {
     () => products.filter(p => selectedIds.has(p.id)),
     [products, selectedIds],
   );
-
   const startBatchPrint = async () => {
     setIsPrinting(true);
     try {
       for (let i = 0; i < itemsToPrint.length; i++) {
         setPrintProgress(i + 1);
         const item = itemsToPrint[i];
+        const ref = labelRefs.current[item.id];
 
-        await printSingleLabel({
-          name: item.name,
-          price: item.price,
-          barcode: item.barcode || '00000000',
-        });
+        if (!ref) {
+          console.warn(`No ref for item ${item.id}`);
+          continue;
+        }
 
-        // Delay to prevent buffer overflow
+        await printSingleLabel(ref);
+
+        // Delay between labels to avoid BT buffer overflow
         if (i < itemsToPrint.length - 1) {
-          await new Promise(res => setTimeout(res, 2000));
+          await new Promise(res => setTimeout(res, 2500));
         }
       }
-      Alert.alert('Success', 'All labels printed successfully');
+      Alert.alert('Success', 'All labels printed successfully!');
       setIsPreviewVisible(false);
       setSelectedIds(new Set());
     } catch (error: any) {
@@ -100,6 +104,34 @@ export default function BulkPrintScreen() {
       setPrintProgress(0);
     }
   };
+  // const startBatchPrint = async () => {
+  //   setIsPrinting(true);
+  //   try {
+  //     for (let i = 0; i < itemsToPrint.length; i++) {
+  //       setPrintProgress(i + 1);
+  //       const item = itemsToPrint[i];
+
+  //       await printSingleLabel({
+  //         name: item.name,
+  //         price: item.price,
+  //         barcode: item.barcode || '00000000',
+  //       });
+
+  //       // Delay to prevent buffer overflow
+  //       if (i < itemsToPrint.length - 1) {
+  //         await new Promise(res => setTimeout(res, 2000));
+  //       }
+  //     }
+  //     Alert.alert('Success', 'All labels printed successfully');
+  //     setIsPreviewVisible(false);
+  //     setSelectedIds(new Set());
+  //   } catch (error: any) {
+  //     Alert.alert('Print Error', error.message);
+  //   } finally {
+  //     setIsPrinting(false);
+  //     setPrintProgress(0);
+  //   }
+  // };
   const handleBulkPrint = () => {
     const itemsToPrint = products.filter(p => selectedIds.has(p.id));
     if (itemsToPrint.length === 0) {
@@ -196,6 +228,7 @@ export default function BulkPrintScreen() {
             <ScrollView contentContainerStyle={styles.previewList}>
               {itemsToPrint.map(item => (
                 <View key={item.id} style={styles.previewCard}>
+                  {/* Live preview shown to user */}
                   <View style={styles.previewInfo}>
                     <Text style={styles.previewName} numberOfLines={1}>
                       {item.name}
@@ -206,10 +239,22 @@ export default function BulkPrintScreen() {
                   <View style={styles.qrContainer}>
                     <QRCode
                       value={item.barcode || '0000'}
-                      size={60} // Bigger size for preview
+                      size={60}
                       quietZone={2}
                     />
                   </View>
+
+                  {/* Hidden ViewShot — this is what actually gets printed */}
+                  <ViewShot
+                    ref={ref => (labelRefs.current[item.id] = ref)}
+                    options={{format: 'png', quality: 1.0}}
+                    style={styles.hiddenLabel}>
+                    <LabelTemplate
+                      name={item.name}
+                      price={item.price}
+                      barcode={item.barcode || '00000000'}
+                    />
+                  </ViewShot>
                 </View>
               ))}
             </ScrollView>
@@ -335,6 +380,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#eee',
+  },
+  hiddenLabel: {
+    position: 'absolute',
+    top: -9999, // pushed off screen, still renders for capture
+    left: 0,
+    opacity: 0,
   },
   modalFooter: {
     padding: 20,

@@ -48,6 +48,7 @@
     "react-native-thermal-receipt-printer-image-qr": "^0.1.12",
     "react-native-toast-message": "^2.3.3",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-view-shot": "^4.0.3",
     "react-native-vision-camera": "^4.7.3",
     "react-redux": "^9.2.0",
     "socket.io-client": "^4.8.3"
