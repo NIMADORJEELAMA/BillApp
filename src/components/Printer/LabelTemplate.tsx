@@ -30,20 +30,23 @@ export default function LabelTemplate({name, price, barcode}: Props) {
           />
         </View>
       </View>
+      <View style={{height: 40}} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   label: {
-    width: 384, // Standard for 58mm printers
+    width: 384,
     paddingHorizontal: 12,
-    paddingVertical: 2,
+
+    paddingTop: 5,
+    paddingBottom: 6,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    height: 190,
   },
+
   info: {flex: 1, paddingRight: 20}, // Increased padding to prevent overlap
   qrWrapper: {
     paddingRight: 10, // Extra room for the horizontal stretch
@@ -52,7 +55,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  name: {fontSize: 13, fontWeight: '700', color: '#000', marginBottom: 4},
+  name: {fontSize: 13, fontWeight: '700', color: '#000', marginBottom: 2},
   price: {fontSize: 15, fontWeight: '800', color: '#000', marginBottom: 3},
   barcode: {fontSize: 10, color: '#333', letterSpacing: 1},
 });

@@ -76,6 +76,7 @@ export const printSingleLabel = async (viewRef: React.RefObject<any>) => {
       format: 'png',
       quality: 1.0,
       result: 'base64',
+      snapshotContentContainer: false,
     });
 
     // printImageBase64 is the correct method name
@@ -88,8 +89,8 @@ export const printSingleLabel = async (viewRef: React.RefObject<any>) => {
     });
 
     // Feed and cut
-    // await BLEPrinter.printText('\n\n');
-    await BLEPrinter.printBill('\x1D\x56\x42\x00');
+    // await BLEPrinter.printText('\n');
+    // await BLEPrinter.printBill('\x1D\x56\x42\x00');
   } catch (error: any) {
     throw new Error(`Print failed: ${error.message}`);
   }

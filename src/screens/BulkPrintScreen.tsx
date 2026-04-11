@@ -92,7 +92,7 @@ export default function BulkPrintScreen() {
 
         // Delay between labels to avoid BT buffer overflow
         if (i < itemsToPrint.length - 1) {
-          await new Promise(res => setTimeout(res, 1000));
+          await new Promise(res => setTimeout(res, 100));
         }
       }
       Alert.alert('Success', 'All labels printed successfully!');
@@ -104,48 +104,6 @@ export default function BulkPrintScreen() {
       setIsPrinting(false);
       setPrintProgress(0);
     }
-  };
-  // const startBatchPrint = async () => {
-  //   setIsPrinting(true);
-  //   try {
-  //     for (let i = 0; i < itemsToPrint.length; i++) {
-  //       setPrintProgress(i + 1);
-  //       const item = itemsToPrint[i];
-
-  //       await printSingleLabel({
-  //         name: item.name,
-  //         price: item.price,
-  //         barcode: item.barcode || '00000000',
-  //       });
-
-  //       // Delay to prevent buffer overflow
-  //       if (i < itemsToPrint.length - 1) {
-  //         await new Promise(res => setTimeout(res, 2000));
-  //       }
-  //     }
-  //     Alert.alert('Success', 'All labels printed successfully');
-  //     setIsPreviewVisible(false);
-  //     setSelectedIds(new Set());
-  //   } catch (error: any) {
-  //     Alert.alert('Print Error', error.message);
-  //   } finally {
-  //     setIsPrinting(false);
-  //     setPrintProgress(0);
-  //   }
-  // };
-  const handleBulkPrint = () => {
-    const itemsToPrint = products.filter(p => selectedIds.has(p.id));
-    if (itemsToPrint.length === 0) {
-      Toast.show({type: 'info', text1: 'Select items to print'});
-      return;
-    }
-
-    // logic to pass itemsToPrint to your Thermal Printer Service
-    console.log('Printing these items:', itemsToPrint);
-    Toast.show({
-      type: 'success',
-      text1: `Sending ${itemsToPrint.length} labels to printer...`,
-    });
   };
 
   const renderItem = ({item}: any) => {
