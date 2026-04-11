@@ -7,30 +7,23 @@ interface Props {
   price: string | number;
   barcode: string;
 }
+
 export default function LabelTemplate({name, price, barcode}: Props) {
   return (
     <View style={styles.label}>
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={2}>
+        <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit>
           {name}
         </Text>
         <Text style={styles.price}>Rs. {price}</Text>
-        <Text style={styles.barcode}>{barcode}</Text>
+        <Text style={styles.barcode} numberOfLines={1}>
+          {barcode}
+        </Text>
       </View>
 
       <View style={styles.qrWrapper}>
-        {/* This View stretches the QR horizontally. 
-            If it's still too tall, increase 1.4 to 1.5 or 1.6.
-        */}
-        <View style={{transform: [{scaleX: 1.5}]}}>
-          <QRCode
-            value={barcode || '00000000'}
-            size={85} // Slightly smaller base size to allow for the width expansion
-            quietZone={10}
-          />
-        </View>
+        <QRCode value={barcode || '00000000'} size={160} quietZone={90} />
       </View>
-      <View style={{height: 40}} />
     </View>
   );
 }
@@ -38,23 +31,22 @@ export default function LabelTemplate({name, price, barcode}: Props) {
 const styles = StyleSheet.create({
   label: {
     width: 384,
+    height: 190, // hard fixed height — every label = same PNG size
     paddingHorizontal: 12,
-
-    paddingTop: 5,
-    paddingBottom: 6,
+    paddingVertical: 100,
+    // paddingBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
+    overflow: 'hidden', // clips anything that would expand beyond 120px
   },
-
-  info: {flex: 1, paddingRight: 20}, // Increased padding to prevent overlap
+  info: {flex: 1, paddingRight: 16},
   qrWrapper: {
-    paddingRight: 10, // Extra room for the horizontal stretch
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
+    width: 100,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
   },
-
   name: {fontSize: 13, fontWeight: '700', color: '#000', marginBottom: 2},
   price: {fontSize: 15, fontWeight: '800', color: '#000', marginBottom: 3},
   barcode: {fontSize: 10, color: '#333', letterSpacing: 1},

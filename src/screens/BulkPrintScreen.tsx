@@ -27,7 +27,7 @@ export default function BulkPrintScreen() {
   const [products, setProducts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const labelRefs = useRef<{[key: string]: any}>({});
+  const labelRefs = useRef<{[key: string]: View | null}>({});
   useEffect(() => {
     loadProducts();
   }, []);
@@ -92,7 +92,7 @@ export default function BulkPrintScreen() {
 
         // Delay between labels to avoid BT buffer overflow
         if (i < itemsToPrint.length - 1) {
-          await new Promise(res => setTimeout(res, 100));
+          await new Promise(res => setTimeout(res, 350));
         }
       }
       Alert.alert('Success', 'All labels printed successfully!');
@@ -130,6 +130,19 @@ export default function BulkPrintScreen() {
   return (
     <MainLayout title="Bulk Label Print" showBack>
       <View style={styles.container}>
+        {itemsToPrint.map(item => (
+          <View
+            key={item.id}
+            collapsable={false}
+            ref={ref => (labelRefs.current[item.id] = ref)}
+            style={styles.hiddenLabel}>
+            <LabelTemplate
+              name={item.name}
+              price={item.price}
+              barcode={item.barcode || '00000000'}
+            />
+          </View>
+        ))}
         <View style={styles.searchBar}>
           <TextInput
             style={styles.input}
@@ -199,19 +212,6 @@ export default function BulkPrintScreen() {
                   <View style={styles.qrContainer}>
                     <QRCode value={item.barcode || '0000'} size={90} ecl="H" />
                   </View>
-
-                  {/* Hidden ViewShot — this is what actually gets printed */}
-                  <ViewShot
-                    collapsable={false}
-                    ref={ref => (labelRefs.current[item.id] = ref)}
-                    options={{format: 'png', quality: 1.0}}
-                    style={styles.hiddenLabel}>
-                    <LabelTemplate
-                      name={item.name}
-                      price={item.price}
-                      barcode={item.barcode || '00000000'}
-                    />
-                  </ViewShot>
                 </View>
               ))}
             </ScrollView>
@@ -340,8 +340,10 @@ const styles = StyleSheet.create({
   },
   hiddenLabel: {
     position: 'absolute',
-    top: -9999, // pushed off screen, still renders for capture
-    left: 0,
+    left: -9999,
+    top: 0,
+    width: 384,
+    height: 120,
     opacity: 0,
   },
   modalFooter: {

@@ -64,33 +64,29 @@
 //   const base64Data = Buffer.from(commands).toString('base64');
 //   await BTPrinter.printRaw(base64Data);
 // };
-
 import {captureRef} from 'react-native-view-shot';
 import {BLEPrinter} from 'react-native-thermal-receipt-printer-image-qr';
 
 export const printSingleLabel = async (viewRef: React.RefObject<any>) => {
   try {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    // Capture the hidden LabelTemplate as base64 PNG
+    // Wait for layout to settle
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Capture with EXPLICIT fixed dimensions — this is the key
+    // captureRef will crop/scale to exactly these pixels every time
     const base64 = await captureRef(viewRef, {
       format: 'png',
       quality: 1.0,
       result: 'base64',
+      width: 384,
+      height: 190,
       snapshotContentContainer: false,
     });
 
-    // printImageBase64 is the correct method name
-
-    // imageWidth: 384 for 58mm | 576 for 80mm printer
-
     await BLEPrinter.printImageBase64(base64, {
       imageWidth: 384,
-      imageHeight: 0, // 0 = auto height
+      imageHeight: 190, // explicit, not 0
     });
-
-    // Feed and cut
-    // await BLEPrinter.printText('\n');
-    // await BLEPrinter.printBill('\x1D\x56\x42\x00');
   } catch (error: any) {
     throw new Error(`Print failed: ${error.message}`);
   }
