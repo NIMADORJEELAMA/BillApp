@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   name: {
-    fontSize: 18, // Adjusted for physical 25mm height d
+    fontSize: 18, // Adjusted for physical 25mm height 123
     fontWeight: '700',
     color: '#000',
   },
