@@ -75,8 +75,8 @@ const ProfileScreen = () => {
                 iconColor={'#000'}
               />
               <ButtonPreferences
-                title="Help Center"
-                onPress={() => navigation.navigate('HelpCenter')}
+                title="Image Print"
+                onPress={() => navigation.navigate('ImagePrintScreen')}
                 LeftIcon={Help}
                 RightIcon={ArrowRight}
                 // rightLabel="Next"

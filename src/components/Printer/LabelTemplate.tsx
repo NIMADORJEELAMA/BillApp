@@ -22,8 +22,10 @@ export default function LabelTemplate({name, price, barcode}: Props) {
       </View>
 
       <View style={styles.qrWrapper}>
-        {/* Size 60 fits well within a 70-unit height */}
-        <QRCode value={barcode || '00000000'} size={85} quietZone={10} />
+        <View style={{transform: [{scaleX: 1.4}]}}>
+          {/* Size 60 fits well within a 70-unit height */}
+          <QRCode value={barcode || '00000000'} size={85} quietZone={10} />
+        </View>
       </View>
     </View>
   );

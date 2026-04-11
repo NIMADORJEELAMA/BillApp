@@ -68,6 +68,7 @@ import ModernHomeScreen from '../screens/ModernHomeScreen';
 
 import BulkProductScreen from '../screens/ProductScreen/BulkProductScreen';
 import BulkPrintScreen from '../screens/BulkPrintScreen';
+import ImagePrintScreen from '../components/Printer/ImagePrintScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -86,6 +87,7 @@ export type RootStackParamList = {
   SalesScreen: undefined;
   BulkProductScreen: undefined;
   BulkPrintScreen: undefined;
+  ImagePrintScreen: undefined;
 
   GenderSelect: undefined;
   Name: undefined;
@@ -434,6 +436,7 @@ const Navigation = () => {
             component={BulkProductScreen}
           />
           <Stack.Screen name="BulkPrintScreen" component={BulkPrintScreen} />
+          <Stack.Screen name="ImagePrintScreen" component={ImagePrintScreen} />
 
           {/* Settings and other inner screens should be here */}
           <Stack.Screen name="Preferences" component={Preferences} />

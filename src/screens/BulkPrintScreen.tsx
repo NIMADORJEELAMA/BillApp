@@ -196,25 +196,32 @@ export default function BulkPrintScreen() {
                 <Text style={styles.closeX}>✕</Text>
               </TouchableOpacity>
             </View>
+            <View style={{flex: 1}}>
+              <ScrollView
+                style={styles.scrollViewStyle}
+                contentContainerStyle={styles.previewList}>
+                {itemsToPrint.map(item => (
+                  <View key={item.id} style={styles.previewCard}>
+                    {/* Live preview shown to user */}
+                    <View style={styles.previewInfo}>
+                      <Text style={styles.previewName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.previewPrice}>₹{item.price}</Text>
+                      <Text style={styles.previewBarcode}>{item.barcode}</Text>
+                    </View>
 
-            <ScrollView contentContainerStyle={styles.previewList}>
-              {itemsToPrint.map(item => (
-                <View key={item.id} style={styles.previewCard}>
-                  {/* Live preview shown to user */}
-                  <View style={styles.previewInfo}>
-                    <Text style={styles.previewName} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={styles.previewPrice}>₹{item.price}</Text>
-                    <Text style={styles.previewBarcode}>{item.barcode}</Text>
+                    <View style={styles.qrContainer}>
+                      <QRCode
+                        value={item.barcode || '0000'}
+                        size={90}
+                        ecl="H"
+                      />
+                    </View>
                   </View>
-
-                  <View style={styles.qrContainer}>
-                    <QRCode value={item.barcode || '0000'} size={90} ecl="H" />
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
+                ))}
+              </ScrollView>
+            </View>
 
             <View style={styles.modalFooter}>
               {isPrinting ? (
@@ -306,6 +313,9 @@ const styles = StyleSheet.create({
   modalTitle: {fontSize: 18, fontWeight: 'bold', color: '#1e293b'},
   closeX: {fontSize: 22, color: '#64748b', padding: 5},
   previewList: {padding: 15},
+  scrollViewStyle: {
+    flex: 1,
+  },
   previewCard: {
     flexDirection: 'row',
     backgroundColor: '#fff',
