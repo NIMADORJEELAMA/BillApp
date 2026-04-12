@@ -463,7 +463,7 @@ export default function ProductFormModal({
                 <View style={{zIndex: 5000, elevation: 5}}>
                   <SearchableDropdown
                     label="Category"
-                    value={searchQuery} // Shows the name in the "trigger" box
+                    value={searchQuery} // Shows the name in the "trigger" boxs
                     data={filteredCategories}
                     isCreatingNew={isCreatingNewCategory}
                     onChangeText={text => {
