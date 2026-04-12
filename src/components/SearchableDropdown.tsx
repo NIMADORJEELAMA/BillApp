@@ -9,15 +9,16 @@ import {
   Modal,
   SafeAreaView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-
 interface SearchableDropdownProps {
   label: string;
-  value: string; // The selected name to display in the input
+  value: string;
   onChangeText: (text: string) => void;
   data: any[];
   onSelectItem: (item: any) => void;
   isCreatingNew: boolean;
+  loading?: boolean; // New prop
 }
 
 export default function SearchableDropdown({
@@ -27,6 +28,7 @@ export default function SearchableDropdown({
   data,
   onSelectItem,
   isCreatingNew,
+  loading = false, // Default to false
 }: SearchableDropdownProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -39,7 +41,6 @@ export default function SearchableDropdown({
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
 
-      {/* Clickable Trigger: Looks like an input, but opens the Modal */}
       <TouchableOpacity
         style={styles.trigger}
         onPress={() => setIsModalVisible(true)}>
@@ -48,12 +49,8 @@ export default function SearchableDropdown({
         </Text>
       </TouchableOpacity>
 
-      <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}>
+      <Modal visible={isModalVisible} animationType="slide">
         <SafeAreaView style={styles.modalContainer}>
-          {/* Modal Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select {label}</Text>
             <TouchableOpacity onPress={() => setIsModalVisible(false)}>
@@ -61,7 +58,6 @@ export default function SearchableDropdown({
             </TouchableOpacity>
           </View>
 
-          {/* Search Input inside Modal */}
           <View style={styles.searchSection}>
             <TextInput
               style={styles.modalInput}
@@ -70,28 +66,34 @@ export default function SearchableDropdown({
               onChangeText={onChangeText}
               autoFocus={true}
             />
+            {/* Show loader inside the search bar if searching */}
+            {loading && (
+              <ActivityIndicator
+                style={{position: 'absolute', right: 25, top: 28}}
+                color="#2563eb"
+              />
+            )}
           </View>
 
-          {/* List of Items: This will scroll perfectly now */}
           <ScrollView
             keyboardShouldPersistTaps="always"
             style={styles.scrollView}>
-            {data.length === 0 && !isCreatingNew ? (
-              <View style={styles.noResults}>
-                <Text style={styles.noResultsText}>No results found</Text>
-              </View>
-            ) : (
-              data.map(item => (
-                <TouchableOpacity
-                  key={item.id || item._id}
-                  style={styles.dropdownItem}
-                  onPress={() => handleSelect(item)}>
-                  <Text style={styles.itemText}>{item.name}</Text>
-                </TouchableOpacity>
-              ))
-            )}
+            {data.map(item => (
+              <TouchableOpacity
+                key={item.id || item._id}
+                style={styles.dropdownItem}
+                onPress={() => handleSelect(item)}>
+                <Text style={styles.itemText}>{item.name}</Text>
+                {/* Optional: Show price/barcode in subtext if searching products */}
+                {item.price && (
+                  <Text style={{fontSize: 12, color: '#64748b'}}>
+                    ₹{item.price} • {item.barcode}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
 
-            {isCreatingNew && value.length > 0 && (
+            {isCreatingNew && value.length > 0 && !loading && (
               <TouchableOpacity
                 style={styles.createItemContainer}
                 onPress={() => handleSelect({name: value, isNew: true})}>

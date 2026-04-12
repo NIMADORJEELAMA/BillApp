@@ -44,6 +44,14 @@ export default function ProductFormModal({
   const [createdProduct, setCreatedProduct] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [isScannerVisible, setIsScannerVisible] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [productSearchResults, setProductSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   const [form, setForm] = useState({
     name: '',
     price: '',
@@ -54,12 +62,48 @@ export default function ProductFormModal({
     categoryId: '',
   });
 
-  console.log('form', form);
+  const searchExistingProducts = async (query: string) => {
+    if (query.length < 2) {
+      setProductSearchResults([]);
+      return;
+    }
+    try {
+      setIsSearching(true);
+      // Use your existing search endpoint
+      const res = await axiosInstance.get(`/products?search=${query}&take=5`);
+      setProductSearchResults(res.data.items || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-  const [focusedField, setFocusedField] = useState('');
+  const handleProductSelect = (item: any) => {
+    if (item.isNew) {
+      // If it's new, just set the name and let the user fill the rest
+      setForm(prev => ({...prev, name: item.name}));
+      setEditingId(null);
+    } else {
+      // If it exists, auto-fill EVERYTHING
+      setForm({
+        name: item.name,
+        price: item.price.toString(),
+        costPrice: item.costPrice?.toString() || '',
+        barcode: item.barcode || '',
+        stockQty: item.stockQty.toString(),
+        unit: item.unit || 'PCS',
+        categoryId: item.categoryId || '',
+      });
+      setEditingId(item.id);
+
+      // Update Category Dropdown UI
+      if (item.category) {
+        setSelectedCategory(item.category);
+        setSearchQuery(item.category.name);
+      }
+    }
+  };
 
   useEffect(() => {
     if (isVisible) fetchCategories();
@@ -114,15 +158,16 @@ export default function ProductFormModal({
     }
   };
   const handleBarcodeLookup = async (barcode: string) => {
-    if (!barcode || barcode.length < 3) return;
+    if (!barcode) return;
 
     try {
-      // Replace '/products/barcode/' with your actual endpoint
       const res = await axiosInstance.get(`/products/barcode/${barcode}`);
 
       if (res.data) {
         const p = res.data;
-        // Auto-fill the form with found data
+        console.log('res.data', res.data);
+
+        // 1. Update the main form
         setForm({
           name: p.name || '',
           price: p.price?.toString() || '',
@@ -132,18 +177,28 @@ export default function ProductFormModal({
           unit: p.unit || 'PCS',
           categoryId: p.categoryId || '',
         });
+        setEditingId(p.id);
+        // 2. FIX: Find the category object from your existing categories list
+        // This ensures the dropdown UI knows which item is selected
+        if (p.categoryId && categories.length > 0) {
+          const existingCat = categories.find(
+            c => c.id === p.categoryId || c._id === p.categoryId,
+          );
 
-        // Update the category UI
-        if (p.category) {
+          if (existingCat) {
+            setSelectedCategory(existingCat);
+            setSearchQuery(existingCat.name); // This fills the text box
+          }
+        } else if (p.category) {
+          // Fallback if the API returns the category object joined
           setSelectedCategory(p.category);
           setSearchQuery(p.category.name);
         }
 
-        Toast.show({type: 'info', text1: 'Existing product loaded'});
+        Toast.show({type: 'info', text1: 'Product details loaded'});
       }
     } catch (e) {
-      // If 404, we do nothing and let the user fill details manually
-      console.log('Barcode not found, proceed with manual entry');
+      console.log('New item - manual entry required');
     }
   };
   const isCreatingNewCategory =
@@ -269,13 +324,10 @@ export default function ProductFormModal({
         costPrice: parseFloat(form.costPrice) || 0,
         stockQty: parseInt(form.stockQty, 10),
       };
-
+      console.log('payload', payload);
       let response;
-      if (product?.id) {
-        response = await axiosInstance.patch(
-          `/products/${product.id}`,
-          payload,
-        );
+      if (editingId) {
+        response = await axiosInstance.patch(`/products/${editingId}`, payload);
         console.log('response', response);
       } else {
         response = await axiosInstance.post('/products', payload);
@@ -336,13 +388,31 @@ export default function ProductFormModal({
               {/* CARD 1 */}
 
               <View style={styles.card}>
-                <AppInput
+                <View style={{zIndex: 6000, elevation: 6}}>
+                  <SearchableDropdown
+                    label="Product Name"
+                    value={form.name}
+                    loading={isSearching}
+                    data={productSearchResults}
+                    isCreatingNew={
+                      !productSearchResults.some(
+                        p => p.name.toLowerCase() === form.name.toLowerCase(),
+                      )
+                    }
+                    onChangeText={text => {
+                      handleInputChange('name', text);
+                      searchExistingProducts(text);
+                    }}
+                    onSelectItem={handleProductSelect}
+                  />
+                </View>
+                {/* <AppInput
                   label="Product Name"
                   required
                   value={form.name}
                   placeholder="Enter product name"
                   onChangeText={v => handleInputChange('name', v)}
-                />
+                /> */}
 
                 <View style={styles.row}>
                   <View style={{flex: 1}}>
@@ -485,7 +555,9 @@ export default function ProductFormModal({
                   style={[styles.secondaryButton, {flex: 1, marginBottom: 0}]}
                   onPress={() => handleSave(false)}
                   disabled={loading}>
-                  <Text style={styles.secondaryText}>JUST CREATE</Text>
+                  <Text style={styles.secondaryText}>
+                    {editingId ? 'UPDATE' : 'CREATE'}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
