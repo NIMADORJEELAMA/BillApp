@@ -382,7 +382,6 @@ export default function ProductFormModal({
                       placeholder="Enter or scan barcode"
                       onChangeText={v => handleInputChange('barcode', v)}
                       // Trigger lookup when user finishes typing
-                      // Trigger lookup when user finishes typing
 
                       onBlur={() => handleBarcodeLookup(form.barcode)}
                     />
