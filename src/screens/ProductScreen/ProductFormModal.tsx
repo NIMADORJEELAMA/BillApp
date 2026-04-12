@@ -469,7 +469,6 @@ export default function ProductFormModal({
                     onChangeText={text => {
                       setSearchQuery(text);
 
-                      // Only clear if user actually changed selection manually
                       if (selectedCategory && selectedCategory.name !== text) {
                         setSelectedCategory(null);
                         setForm(prev => ({...prev, categoryId: ''}));
