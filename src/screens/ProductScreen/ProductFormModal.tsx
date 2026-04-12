@@ -21,7 +21,11 @@ import AppInput from '../../components/Input/AppInput';
 import SearchableDropdown from '../../components/SearchableDropdown';
 import CustomDropdown from '../../components/CustomDropdown';
 import ProductBarcodeCard from './ProductBarcodeCard';
-
+import {
+  Camera,
+  useCameraDevice,
+  useCodeScanner,
+} from 'react-native-vision-camera';
 interface ProductFormModalProps {
   isVisible: boolean;
   onClose: () => void;
@@ -39,7 +43,7 @@ export default function ProductFormModal({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [createdProduct, setCreatedProduct] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
-
+  const [isScannerVisible, setIsScannerVisible] = useState(false);
   const [form, setForm] = useState({
     name: '',
     price: '',
@@ -80,7 +84,68 @@ export default function ProductFormModal({
     setSearchQuery(cat.name);
     setIsDropdownVisible(false);
   };
+  const codeScanner = useCodeScanner({
+    codeTypes: ['ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'qr'],
+    onCodeScanned: codes => {
+      if (codes.length > 0 && codes[0].value) {
+        const scannedValue = codes[0].value;
+        handleInputChange('barcode', scannedValue);
+        setIsScannerVisible(false);
 
+        // TRIGGER LOOKUP HERE
+        handleBarcodeLookup(scannedValue);
+
+        Toast.show({type: 'success', text1: 'Barcode Scanned!'});
+      }
+    },
+  });
+
+  const device = useCameraDevice('back');
+
+  const requestCameraPermission = async () => {
+    const permission = await Camera.requestCameraPermission();
+    if (permission === 'granted') {
+      setIsScannerVisible(true);
+    } else {
+      Alert.alert(
+        'Permission Denied',
+        'Camera permission is required to scan barcodes.',
+      );
+    }
+  };
+  const handleBarcodeLookup = async (barcode: string) => {
+    if (!barcode || barcode.length < 3) return;
+
+    try {
+      // Replace '/products/barcode/' with your actual endpoint
+      const res = await axiosInstance.get(`/products/barcode/${barcode}`);
+
+      if (res.data) {
+        const p = res.data;
+        // Auto-fill the form with found data
+        setForm({
+          name: p.name || '',
+          price: p.price?.toString() || '',
+          costPrice: p.costPrice?.toString() || '',
+          barcode: p.barcode || barcode,
+          stockQty: p.stockQty?.toString() || '0',
+          unit: p.unit || 'PCS',
+          categoryId: p.categoryId || '',
+        });
+
+        // Update the category UI
+        if (p.category) {
+          setSelectedCategory(p.category);
+          setSearchQuery(p.category.name);
+        }
+
+        Toast.show({type: 'info', text1: 'Existing product loaded'});
+      }
+    } catch (e) {
+      // If 404, we do nothing and let the user fill details manually
+      console.log('Barcode not found, proceed with manual entry');
+    }
+  };
   const isCreatingNewCategory =
     searchQuery.length > 0 &&
     !categories.some(c => c.name.toLowerCase() === searchQuery.toLowerCase());
@@ -126,6 +191,12 @@ export default function ProductFormModal({
   }, [categories, product]);
   const handleInputChange = (field: string, value: string) => {
     setForm(prev => ({...prev, [field]: value}));
+
+    // If user finishes typing a barcode (e.g., length > 5 or 8)
+    if (field === 'barcode' && value.length >= 8) {
+      // Optional: Add a debounce here or a "Lookup" button
+      handleBarcodeLookup(value);
+    }
   };
 
   const generateBarcode = () => {
@@ -301,7 +372,39 @@ export default function ProductFormModal({
 
               {/* CARD 2 */}
               <View style={styles.card}>
+                {/* Barcode Input Group */}
                 <View style={styles.barcodeRow}>
+                  <View style={{flex: 1}}>
+                    <AppInput
+                      label="Barcode"
+                      containerStyle={{flex: 1, marginBottom: 0}}
+                      value={form.barcode}
+                      placeholder="Enter or scan barcode"
+                      onChangeText={v => handleInputChange('barcode', v)}
+                      // Trigger lookup when user finishes typing
+                      onBlur={() => handleBarcodeLookup(form.barcode)}
+                    />
+                  </View>
+                  <View style={styles.buttonGroup}>
+                    {/* SCAN BUTTON */}
+                    <TouchableOpacity
+                      style={[
+                        styles.generateButton,
+                        {backgroundColor: '#10b981'},
+                      ]}
+                      onPress={requestCameraPermission}>
+                      <Text style={styles.generateButtonText}>SCAN</Text>
+                    </TouchableOpacity>
+
+                    {/* GEN BUTTON */}
+                    <TouchableOpacity
+                      style={styles.generateButton}
+                      onPress={generateBarcode}>
+                      <Text style={styles.generateButtonText}>GEN</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {/* <View style={styles.barcodeRow}>
                   <View style={{flex: 1}}>
                     <AppInput
                       label="Barcode" // Empty label if you want to use the card's header logic
@@ -311,8 +414,20 @@ export default function ProductFormModal({
                       onChangeText={v => handleInputChange('barcode', v)}
                     />
                   </View>
-                  <View style={{justifyContent: 'center'}}>
-                    <Text style={styles.generateButtonText}>''</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'flex-end',
+                      gap: 5,
+                    }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.generateButton,
+                        {backgroundColor: '#10b981'},
+                      ]} // Green for scan
+                      onPress={() => setIsScannerVisible(true)}>
+                      <Text style={styles.generateButtonText}>SCAN</Text>
+                    </TouchableOpacity>
 
                     <TouchableOpacity
                       style={styles.generateButton}
@@ -320,7 +435,7 @@ export default function ProductFormModal({
                       <Text style={styles.generateButtonText}>GEN</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </View> */}
 
                 <View style={styles.row}>
                   <View style={{flex: 1}}>
@@ -401,7 +516,30 @@ export default function ProductFormModal({
               </View> */}
             </ScrollView>
           </KeyboardAvoidingView>
+          <Modal visible={isScannerVisible} animationType="slide">
+            <View style={styles.scannerContainer}>
+              {device == null ? (
+                <ActivityIndicator size="large" color="#fff" />
+              ) : (
+                <Camera
+                  style={StyleSheet.absoluteFill}
+                  device={device}
+                  isActive={isScannerVisible}
+                  codeScanner={codeScanner}
+                />
+              )}
 
+              {/* Overlay UI */}
+              <View style={styles.overlay}>
+                <View style={styles.scanWindow} />
+                <TouchableOpacity
+                  style={styles.cancelScanBtn}
+                  onPress={() => setIsScannerVisible(false)}>
+                  <Text style={styles.cancelScanText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
           <ProductBarcodeCard
             isVisible={showPrintModal}
             product={createdProduct}
@@ -452,7 +590,45 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 3,
   },
-
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-end',
+  },
+  scannerContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  scanWindow: {
+    width: 250,
+    height: 180,
+    borderWidth: 2,
+    borderColor: '#10b981',
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+  },
+  cancelScanBtn: {
+    position: 'absolute',
+    bottom: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  cancelScanText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   inputFocus: {
     borderColor: '#2563eb',
   },

@@ -32,6 +32,47 @@ export default function BulkPrintScreen() {
     loadProducts();
   }, []);
 
+  // Change this state
+  const [printQtys, setPrintQtys] = useState<{[key: string]: number}>({});
+
+  const toggleSelect = (id: string) => {
+    setPrintQtys(prev => {
+      const next = {...prev};
+      if (next[id]) {
+        delete next[id]; // Deselect
+      } else {
+        next[id] = 1; // Default to 1 on select
+      }
+      return next;
+    });
+  };
+
+  const updateQty = (id: string, delta: number) => {
+    setPrintQtys(prev => {
+      const currentQty = prev[id] || 0;
+      const newQty = Math.max(0, currentQty + delta);
+
+      const next = {...prev};
+      if (newQty === 0) {
+        delete next[id];
+      } else {
+        next[id] = newQty;
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (Object.keys(printQtys).length === filteredProducts.length) {
+      setPrintQtys({});
+    } else {
+      const allSelected: {[key: string]: number} = {};
+      filteredProducts.forEach(p => {
+        allSelected[p.id] = 1;
+      });
+      setPrintQtys(allSelected);
+    }
+  };
   const loadProducts = async () => {
     try {
       const response = await axiosInstance.get('/products');
@@ -43,20 +84,20 @@ export default function BulkPrintScreen() {
     }
   };
 
-  const toggleSelect = (id: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedIds(next);
-  };
+  // const toggleSelect = (id: string) => {
+  //   const next = new Set(selectedIds);
+  //   if (next.has(id)) next.delete(id);
+  //   else next.add(id);
+  //   setSelectedIds(next);
+  // };
 
-  const selectAll = () => {
-    if (selectedIds.size === filteredProducts.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredProducts.map(p => p.id)));
-    }
-  };
+  // const selectAll = () => {
+  //   if (selectedIds.size === filteredProducts.length) {
+  //     setSelectedIds(new Set());
+  //   } else {
+  //     setSelectedIds(new Set(filteredProducts.map(p => p.id)));
+  //   }
+  // };
 
   const filteredProducts = useMemo(() => {
     return products.filter(
@@ -69,63 +110,131 @@ export default function BulkPrintScreen() {
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [printProgress, setPrintProgress] = useState(0);
-
-  // Filter products based on selection for the Preview Modal
   const itemsToPrint = useMemo(
-    () => products.filter(p => selectedIds.has(p.id)),
-    [products, selectedIds],
+    () => products.filter(p => printQtys[p.id] > 0),
+    [products, printQtys],
   );
+
   const startBatchPrint = async () => {
     setIsPrinting(true);
     try {
-      for (let i = 0; i < itemsToPrint.length; i++) {
-        setPrintProgress(i + 1);
-        const item = itemsToPrint[i];
+      let currentLabelCount = 0;
+      const totalLabels = Object.values(printQtys).reduce((a, b) => a + b, 0);
+
+      for (const item of itemsToPrint) {
+        const qty = printQtys[item.id];
         const ref = labelRefs.current[item.id];
 
-        if (!ref) {
-          console.warn(`No ref for item ${item.id}`);
-          continue;
-        }
+        if (!ref) continue;
 
-        await printSingleLabel(ref);
+        for (let j = 0; j < qty; j++) {
+          currentLabelCount++;
+          setPrintProgress(currentLabelCount);
 
-        // Delay between labels to avoid BT buffer overflow
-        if (i < itemsToPrint.length - 1) {
-          await new Promise(res => setTimeout(res, 350));
+          await printSingleLabel(ref);
+
+          // Delay to prevent buffer overflow
+          await new Promise(res => setTimeout(res, 400));
         }
       }
-      Alert.alert('Success', 'All labels printed successfully!');
+      Alert.alert('Success', `Printed ${totalLabels} labels!`);
       setIsPreviewVisible(false);
-      setSelectedIds(new Set());
+      setPrintQtys({});
     } catch (error: any) {
       Alert.alert('Print Error', error.message);
     } finally {
       setIsPrinting(false);
-      setPrintProgress(0);
     }
   };
-
   const renderItem = ({item}: any) => {
-    const isSelected = selectedIds.has(item.id);
+    const qty = printQtys[item.id] || 0;
     return (
-      <TouchableOpacity
-        style={[styles.row, isSelected && styles.rowSelected]}
-        onPress={() => toggleSelect(item.id)}>
-        <View style={styles.checkbox}>
-          {isSelected && <View style={styles.checkboxInner} />}
-        </View>
+      <View style={[styles.row, qty > 0 && styles.rowSelected]}>
+        <TouchableOpacity
+          style={styles.checkbox}
+          onPress={() => toggleSelect(item.id)}>
+          {qty > 0 && <View style={styles.checkboxInner} />}
+        </TouchableOpacity>
+
         <View style={styles.info}>
           <Text style={styles.name}>{item.name}</Text>
           <Text style={styles.barcode}>{item.barcode || 'No Barcode'}</Text>
         </View>
-        <View style={styles.qtyContainer}>
-          <Text style={styles.price}>₹{item.price}</Text>
-          <Text style={styles.stock}>Stock: {item.stockQty}</Text>
+
+        <View style={styles.qtySelector}>
+          <TouchableOpacity
+            onPress={() => updateQty(item.id, -1)}
+            style={styles.qtyBtn}>
+            <Text style={styles.qtyBtnText}>-</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.qtyText}>{qty}</Text>
+
+          <TouchableOpacity
+            onPress={() => updateQty(item.id, 1)}
+            style={styles.qtyBtn}>
+            <Text style={styles.qtyBtnText}>+</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
+  // Filter products based on selection for the Preview Modal
+  // const itemsToPrint = useMemo(
+  //   () => products.filter(p => selectedIds.has(p.id)),
+  //   [products, selectedIds],
+  // );
+  // const startBatchPrint = async () => {
+  //   setIsPrinting(true);
+  //   try {
+  //     for (let i = 0; i < itemsToPrint.length; i++) {
+  //       setPrintProgress(i + 1);
+  //       const item = itemsToPrint[i];
+  //       const ref = labelRefs.current[item.id];
+
+  //       if (!ref) {
+  //         console.warn(`No ref for item ${item.id}`);
+  //         continue;
+  //       }
+
+  //       await printSingleLabel(ref);
+
+  //       // Delay between labels to avoid BT buffer overflow
+  //       if (i < itemsToPrint.length - 1) {
+  //         await new Promise(res => setTimeout(res, 350));
+  //       }
+  //     }
+  //     Alert.alert('Success', 'All labels printed successfully!');
+  //     setIsPreviewVisible(false);
+  //     setSelectedIds(new Set());
+  //   } catch (error: any) {
+  //     Alert.alert('Print Error', error.message);
+  //   } finally {
+  //     setIsPrinting(false);
+  //     setPrintProgress(0);
+  //   }
+  // };
+
+  // const renderItem = ({item}: any) => {
+  //   const isSelected = selectedIds.has(item.id);
+  //   return (
+  //     <TouchableOpacity
+  //       style={[styles.row, isSelected && styles.rowSelected]}
+  //       onPress={() => toggleSelect(item.id)}>
+  //       <View style={styles.checkbox}>
+  //         {isSelected && <View style={styles.checkboxInner} />}
+  //       </View>
+  //       <View style={styles.info}>
+  //         <Text style={styles.name}>{item.name}</Text>
+  //         <Text style={styles.barcode}>{item.barcode || 'No Barcode'}</Text>
+  //       </View>
+  //       <View style={styles.qtyContainer}>
+  //         <Text style={styles.price}>₹{item.price}</Text>
+  //         <Text style={styles.stock}>Stock: {item.stockQty}</Text>
+  //       </View>
+  //     </TouchableOpacity>
+  //   );
+  // };
 
   return (
     <MainLayout title="Bulk Label Print" showBack>
@@ -179,7 +288,8 @@ export default function BulkPrintScreen() {
               selectedIds.size === 0 && {backgroundColor: '#cbd5e1'},
             ]}
             onPress={() => setIsPreviewVisible(true)}
-            disabled={selectedIds.size === 0}>
+            // disabled={selectedIds.size === 0}
+          >
             <Text style={styles.printBtnText}>PREVIEW & PRINT</Text>
           </TouchableOpacity>
         </View>
@@ -293,6 +403,34 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 2,
     backgroundColor: '#2563eb',
+  },
+  qtySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    padding: 4,
+  },
+  qtyBtn: {
+    width: 30,
+    height: 30,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 1,
+  },
+  qtyBtnText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  qtyText: {
+    paddingHorizontal: 12,
+    fontWeight: 'bold',
+    fontSize: 14,
+    minWidth: 35,
+    textAlign: 'center',
   },
   info: {flex: 1},
   name: {fontSize: 16, fontWeight: '600', color: '#1e293b'},

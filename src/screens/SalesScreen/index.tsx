@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   TextInput,
+  Alert,
 } from 'react-native';
 import {
   Camera,
@@ -26,8 +27,8 @@ import Sound from 'react-native-sound';
 import ProductPickerModal from '../ProductScreen/ProductPickerModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScanIcon from '../../assets/Icons/scan.svg';
-import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
-import {set} from 'date-fns';
+
+import ProductScreen from '../ProductScreen/ProductFormModal';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
@@ -44,7 +45,8 @@ export default function SalesScreen() {
   const [qtyModalVisible, setQtyModalVisible] = useState(false);
   const [tempQty, setTempQty] = useState('');
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
-
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [scannedBarcode, setScannedBarcode] = useState('');
   // Refs for Scanner Debounce
   const lastScannedCode = useRef<string | null>(null);
   const lastScanTime = useRef<number>(0);
@@ -107,7 +109,9 @@ export default function SalesScreen() {
 
   const handleLookup = async (barcode: string) => {
     try {
+      setLoading(true);
       const {data} = await axiosInstance.get(`/products/barcode/${barcode}`);
+
       if (data) {
         playSuccessSound();
         dispatch(addToCart(data));
@@ -117,10 +121,48 @@ export default function SalesScreen() {
           position: 'bottom',
         });
       }
-    } catch (error) {
-      console.log('Barcode not found:', barcode);
+    } catch (error: any) {
+      // If product is not found (usually 404)
+      if (error.response?.status === 404) {
+        setScannedBarcode(barcode); // Save barcode to pass to the form
+        Alert.alert(
+          'Product Not Found',
+          `No product found for ${barcode}. Would you like to add it?`,
+          [
+            {text: 'Cancel', style: 'cancel'},
+            {
+              text: 'Add New Product',
+              onPress: () => setIsAddModalVisible(true),
+            },
+          ],
+        );
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Lookup Error',
+          text2: 'Could not connect to server',
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
+  // const handleLookup = async (barcode: string) => {
+  //   try {
+  //     const {data} = await axiosInstance.get(`/products/barcode/${barcode}`);
+  //     if (data) {
+  //       playSuccessSound();
+  //       dispatch(addToCart(data));
+  //       Toast.show({
+  //         type: 'success',
+  //         text1: `Added ${data.name}`,
+  //         position: 'bottom',
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.log('Barcode not found:', barcode);
+  //   }
+  // };
 
   const codeScanner = useCodeScanner({
     codeTypes: ['ean-13', 'code-128', 'qr', 'code-39'],
@@ -181,7 +223,7 @@ export default function SalesScreen() {
               Toast.show({
                 type: 'error',
                 text1: 'Print Failed',
-                text2: result.error,
+                text2: result?.error,
               });
             }
           }
@@ -427,6 +469,17 @@ export default function SalesScreen() {
             </View>
           </View>
 
+          <ProductScreen
+            isVisible={isAddModalVisible}
+            onClose={() => setIsAddModalVisible(false)}
+            onSuccess={() => {
+              setIsAddModalVisible(false);
+              // After successfully creating, look it up again to add to cart
+              handleLookup(scannedBarcode);
+            }}
+            // Pass the barcode so the "Add" form is pre-filled
+            product={{barcode: scannedBarcode}}
+          />
           <ProductPickerModal
             isVisible={pickerVisible}
             onClose={() => setPickerVisible(false)}
