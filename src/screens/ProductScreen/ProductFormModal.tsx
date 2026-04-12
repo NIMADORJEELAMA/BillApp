@@ -475,7 +475,7 @@ export default function ProductFormModal({
                         setForm(prev => ({...prev, categoryId: ''}));
                       }
                     }}
-                    onSelectItem={handleCategorySelect} // This handles the API call
+                    onSelectItem={handleCategorySelect}
                   />
                 </View>
               </View>
