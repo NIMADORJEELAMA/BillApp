@@ -452,7 +452,7 @@ export default function ProductFormModal({
 
                   <View style={{flex: 1}}>
                     <AppInput
-                      label="Unit" // Empty label if you want to use the card's header logic
+                      label="Unit"
                       containerStyle={{flex: 1, marginBottom: 0}}
                       value={form.unit}
                       placeholder="0"
