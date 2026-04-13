@@ -19,7 +19,12 @@ import {
 } from 'react-native-vision-camera';
 import {connectAndPrint} from '../../services/PrinterService';
 import {useDispatch, useSelector} from 'react-redux';
-import {addToCart, updateQty, clearCart} from '../../redux/slices/cartSlice';
+import {
+  addToCart,
+  updateQty,
+  clearCart,
+  updateItemDetails,
+} from '../../redux/slices/cartSlice';
 import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
@@ -29,6 +34,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScanIcon from '../../assets/Icons/scan.svg';
 
 import ProductScreen from '../ProductScreen/ProductFormModal';
+import ItemEditModal from './ItemEditModal';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
@@ -47,6 +53,8 @@ export default function SalesScreen() {
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [scannedBarcode, setScannedBarcode] = useState('');
+  const [editingItem, setEditingItem] = useState(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   // Refs for Scanner Debounce
   const lastScannedCode = useRef<string | null>(null);
   const lastScanTime = useRef<number>(0);
@@ -106,7 +114,14 @@ export default function SalesScreen() {
   const playSuccessSound = useCallback(() => {
     beepSound.current?.stop(() => beepSound.current?.play());
   }, []);
-
+  const handleUpdateItem = updates => {
+    dispatch(
+      updateItemDetails({
+        id: editingItem.productId,
+        updates: updates,
+      }),
+    );
+  };
   const handleLookup = async (barcode: string) => {
     try {
       setLoading(true);
@@ -331,6 +346,13 @@ export default function SalesScreen() {
             keyboardShouldPersistTaps="handled"
             renderItem={({item}) => (
               <View style={styles.cartItem}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditingItem(item);
+                    setIsEditModalVisible(true);
+                  }}>
+                  <Text>Edit</Text>
+                </TouchableOpacity>
                 <View style={{flex: 1}}>
                   <Text style={styles.itemName} numberOfLines={1}>
                     {item.name}
@@ -378,6 +400,12 @@ export default function SalesScreen() {
                 <Text style={styles.emptyText}>Cart is empty</Text>
               </View>
             }
+          />
+          <ItemEditModal
+            isVisible={isEditModalVisible}
+            item={editingItem}
+            onClose={() => setIsEditModalVisible(false)}
+            onSave={handleUpdateItem}
           />
 
           {/* 🔹 FOOTER (KEYBOARD SAFE) */}

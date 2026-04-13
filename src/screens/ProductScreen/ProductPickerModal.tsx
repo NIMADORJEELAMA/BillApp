@@ -27,23 +27,52 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   useEffect(() => {
     if (isVisible) fetchProducts();
   }, [isVisible]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (pageNum = 1, isSearching = false) => {
     try {
-      setLoading(true);
-      const response = await axiosInstance.get('/products');
-      setProducts(response.data.items || []);
+      if (pageNum === 1 && !isSearching) setLoading(true);
+      if (pageNum > 1) setLoadingMore(true);
+
+      const limit = 100; // Reasonable small batch
+      const skip = (pageNum - 1) * limit;
+
+      const response = await axiosInstance.get(
+        `/products?search=${searchQuery}&skip=${skip}&take=${limit}`,
+      );
+
+      const newItems = response.data.items || [];
+
+      // If page 1, replace list. If page > 1, append.
+      setProducts(prev => (pageNum === 1 ? newItems : [...prev, ...newItems]));
+      setHasMore(newItems.length === limit);
+      setPage(pageNum);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+  useEffect(() => {
+    if (!isVisible) return;
+    const delayDebounceFn = setTimeout(() => {
+      fetchProducts(1, true);
+    }, 400); // 400ms delay to prevent API spam
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, isVisible]);
 
+  // 3. Load more function for FlatList
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchProducts(page + 1);
+    }
+  };
   const filteredProducts = useMemo(() => {
     return products.filter(p =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -137,12 +166,21 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
           </View>
         ) : (
           <FlatList
-            data={filteredProducts}
+            data={products}
             keyExtractor={item => item.id}
             renderItem={renderProductItem}
             numColumns={3}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContainer}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMore ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#6366f1"
+                  style={{padding: 20}}
+                />
+              ) : null
+            }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>No products found</Text>

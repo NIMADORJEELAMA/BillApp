@@ -26,6 +26,7 @@ import {
   useCameraDevice,
   useCodeScanner,
 } from 'react-native-vision-camera';
+import {set} from 'date-fns';
 interface ProductFormModalProps {
   isVisible: boolean;
   onClose: () => void;
@@ -70,7 +71,7 @@ export default function ProductFormModal({
     try {
       setIsSearching(true);
       // Use your existing search endpoint
-      const res = await axiosInstance.get(`/products?search=${query}&take=5`);
+      const res = await axiosInstance.get(`/products?search=${query}&take=100`);
       setProductSearchResults(res.data.items || []);
     } catch (e) {
       console.error(e);
@@ -126,7 +127,6 @@ export default function ProductFormModal({
     setSelectedCategory(cat);
     setForm(prev => ({...prev, categoryId: cat.id}));
     setSearchQuery(cat.name);
-    setIsDropdownVisible(false);
   };
   const codeScanner = useCodeScanner({
     codeTypes: ['ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'qr'],
@@ -209,6 +209,7 @@ export default function ProductFormModal({
     if (!isVisible) return;
 
     if (product) {
+      setEditingId(product.id);
       setForm({
         name: product.name || '',
         price: product.price?.toString() || '',
@@ -366,7 +367,6 @@ export default function ProductFormModal({
     <Modal visible={isVisible} animationType="slide" onRequestClose={onClose}>
       <TouchableWithoutFeedback
         onPress={() => {
-          setIsDropdownVisible(false);
           Keyboard.dismiss();
         }}>
         <View style={{flex: 1}}>
