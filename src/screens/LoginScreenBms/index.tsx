@@ -114,7 +114,7 @@ const LoginScreenBms = () => {
             <View style={styles.header}>
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('../../assets/images/logo11.jpg')} // Update this path!!!
+                  source={require('../../assets/images/logo11.jpg')} // Update this path!!!!!
                   style={styles.logoImage}
                   resizeMode="cover"
                 />
