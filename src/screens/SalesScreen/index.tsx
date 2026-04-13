@@ -46,7 +46,7 @@ export default function SalesScreen() {
   // States
   const [hasPermission, setHasPermission] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isCameraVisible, setIsCameraVisible] = useState(true);
+  const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [qtyModalVisible, setQtyModalVisible] = useState(false);
   const [tempQty, setTempQty] = useState('');
@@ -71,10 +71,20 @@ export default function SalesScreen() {
   };
 
   // Update Calculations
-  const subtotal = useMemo(
-    () => cart.reduce((s, i) => s + i.price * i.quantity, 0),
-    [cart],
-  );
+  const subtotal = useMemo(() => {
+    return cart.reduce((total, item) => {
+      const itemTotal = item.price * item.quantity;
+      const discount = item.lineDiscount || 0;
+      return total + (itemTotal - discount);
+    }, 0);
+  }, [cart]);
+  const itemLevelGst = useMemo(() => {
+    return cart.reduce((totalGst, item) => {
+      const taxable = item.price * item.quantity - (item.lineDiscount || 0);
+      const rate = item.taxRate || 0;
+      return totalGst + (taxable * rate) / 100;
+    }, 0);
+  }, [cart]);
 
   // Sync Discount Amount when Percent changes
   const handleDiscountPercentChange = val => {
@@ -102,11 +112,11 @@ export default function SalesScreen() {
     () => Math.max(0, subtotal - finalDiscount),
     [subtotal, finalDiscount],
   );
-
   const finalGstAmount = useMemo(() => {
-    const gstPercent = parseFloat(gstPercentInput) || 0;
-    return (taxableAmount * gstPercent) / 100;
-  }, [taxableAmount, gstPercentInput]);
+    const globalGstPercent = parseFloat(gstPercentInput) || 0;
+    const globalGst = (taxableAmount * globalGstPercent) / 100;
+    return globalGst + itemLevelGst;
+  }, [taxableAmount, gstPercentInput, itemLevelGst]);
 
   const finalAmount = taxableAmount + finalGstAmount;
 
@@ -162,22 +172,6 @@ export default function SalesScreen() {
       setLoading(false);
     }
   };
-  // const handleLookup = async (barcode: string) => {
-  //   try {
-  //     const {data} = await axiosInstance.get(`/products/barcode/${barcode}`);
-  //     if (data) {
-  //       playSuccessSound();
-  //       dispatch(addToCart(data));
-  //       Toast.show({
-  //         type: 'success',
-  //         text1: `Added ${data.name}`,
-  //         position: 'bottom',
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.log('Barcode not found:', barcode);
-  //   }
-  // };
 
   const codeScanner = useCodeScanner({
     codeTypes: ['ean-13', 'code-128', 'qr', 'code-39'],
@@ -213,6 +207,8 @@ export default function SalesScreen() {
           productId: i.productId,
           quantity: i.quantity,
           price: i.price,
+          lineDiscount: i.lineDiscount || 0, // Individual item discount
+          taxRate: i.taxRate || 0,
         })),
       };
       console.log('payload', payload);
@@ -259,19 +255,6 @@ export default function SalesScreen() {
     }
   };
 
-  const submitManualQty = () => {
-    const newQty = parseInt(tempQty, 10);
-    if (!isNaN(newQty) && activeProductId) {
-      const currentItem = cart.find(
-        (i: any) => i.productId === activeProductId,
-      );
-      const delta = newQty - (currentItem?.quantity || 0);
-      dispatch(updateQty({id: activeProductId, delta}));
-    }
-    setQtyModalVisible(false);
-  };
-
-  // --- Effects ---
   useEffect(() => {
     Camera.requestCameraPermission().then(status =>
       setHasPermission(status === 'granted'),
@@ -346,22 +329,46 @@ export default function SalesScreen() {
             keyboardShouldPersistTaps="handled"
             renderItem={({item}) => (
               <View style={styles.cartItem}>
+                {/* Left Section: Info & Edit Trigger */}
                 <TouchableOpacity
+                  style={{flex: 1}}
                   onPress={() => {
                     setEditingItem(item);
                     setIsEditModalVisible(true);
                   }}>
-                  <Text>Edit</Text>
-                </TouchableOpacity>
-                <View style={{flex: 1}}>
                   <Text style={styles.itemName} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={styles.itemSubText}>
-                    ₹{item.price.toFixed(2)}
-                  </Text>
-                </View>
 
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginTop: 2,
+                    }}>
+                    <Text style={styles.itemSubText}>₹{item.price}</Text>
+
+                    {/* Show Item Discount if exists */}
+                    {item.lineDiscount > 0 && (
+                      <Text
+                        style={[
+                          styles.itemSubText,
+                          {color: '#ef4444', marginLeft: 8},
+                        ]}>
+                        (-₹{item.lineDiscount})
+                      </Text>
+                    )}
+
+                    {/* Show GST Tag if exists */}
+                    {item.taxRate > 0 && (
+                      <View style={styles.tagTextContainer}>
+                        <Text style={styles.tagText}>{item.taxRate}% GST</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {/* Center Section: Quantity Controls */}
                 <View style={styles.qtyContainer}>
                   <TouchableOpacity
                     onPress={() =>
@@ -390,9 +397,12 @@ export default function SalesScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.itemTotal}>
-                  ₹{(item.price * item.quantity).toFixed(2)}
-                </Text>
+                {/* Right Section: Line Total */}
+                <View style={{width: 80, alignItems: 'flex-end'}}>
+                  <Text style={styles.itemTotal}>
+                    ₹{item.price * item.quantity - (item.lineDiscount || 0)}
+                  </Text>
+                </View>
               </View>
             )}
             ListEmptyComponent={

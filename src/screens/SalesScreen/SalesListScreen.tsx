@@ -17,6 +17,7 @@ import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import {connectAndPrint} from '../../services/PrinterService';
 import Toast from 'react-native-toast-message';
+import ReceiptViewModal from '../../components/Printer/ReceiptViewModal';
 
 // Move static components outside to prevent re-creation
 const ListEmptyComponent = () => (
@@ -309,78 +310,12 @@ export default function SalesListScreen() {
           }
         />
 
-        <Modal visible={viewModalVisible} animationType="slide" transparent>
-          {/* Modal Content (unchanged but consider moving to a separate file if it gets larger) */}
-          <View style={styles.modalOverlay}>
-            <View style={styles.billModal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Order Details</Text>
-                <TouchableOpacity onPress={() => setViewModalVisible(false)}>
-                  <Text style={styles.closeX}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.receiptHeader}>
-                  <Text style={styles.storeName}>RETAIL STORE</Text>
-                  <Text style={styles.receiptMeta}>
-                    Bill No: {selectedSale?.billNumber}
-                  </Text>
-                  <Text style={styles.receiptMeta}>
-                    Date:{' '}
-                    {selectedSale &&
-                      new Date(selectedSale.createdAt).toLocaleString()}
-                  </Text>
-                </View>
-
-                <View style={styles.divider} />
-
-                {selectedSale?.items.map((item: any, idx: number) => (
-                  <View key={idx} style={styles.itemRow}>
-                    <View style={{flex: 2}}>
-                      <Text style={styles.productName}>
-                        {item.product?.name || 'General Item'}
-                      </Text>
-                      <Text style={styles.productSub}>
-                        ₹{parseFloat(item.price).toFixed(2)} x {item.quantity}
-                      </Text>
-                    </View>
-                    <Text style={styles.itemTotal}>
-                      ₹{(item.quantity * parseFloat(item.price)).toFixed(2)}
-                    </Text>
-                  </View>
-                ))}
-
-                <View style={[styles.divider, {marginVertical: 20}]} />
-
-                <View style={styles.rowBetween}>
-                  <Text>Subtotal</Text>
-                  <Text>₹{selectedSale?.totalAmount}</Text>
-                </View>
-                <View style={styles.rowBetween}>
-                  <Text>Discount</Text>
-                  <Text style={{color: 'red'}}>-₹{selectedSale?.discount}</Text>
-                </View>
-                <View style={styles.rowBetween}>
-                  <Text>GST @ {selectedSale?.gstPercentage}%</Text>
-                  <Text>₹{selectedSale?.taxAmount}</Text>
-                </View>
-                <View style={[styles.rowBetween, {marginTop: 10}]}>
-                  <Text style={styles.grandLabel}>GRAND TOTAL</Text>
-                  <Text style={styles.grandPrice}>
-                    ₹{selectedSale?.finalAmount}
-                  </Text>
-                </View>
-              </ScrollView>
-
-              <TouchableOpacity
-                style={styles.printBtn}
-                onPress={handlePrintFromModal}>
-                <Text style={styles.printBtnText}>PRINT INVOICE</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+        <ReceiptViewModal
+          isVisible={viewModalVisible}
+          onClose={() => setViewModalVisible(false)}
+          sale={selectedSale}
+          onPrint={handlePrintFromModal}
+        />
       </View>
     </MainLayout>
   );

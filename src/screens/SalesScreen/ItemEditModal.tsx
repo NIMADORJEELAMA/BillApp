@@ -13,19 +13,31 @@ import {
 
 const GST_SLABS = [0, 5, 12, 18, 28];
 
-export default function ItemEditModal({isVisible, onClose, item, onSave}) {
+interface CartItemProps {
+  isVisible: boolean;
+  onClose: () => void;
+  item: any;
+  onSave: () => void;
+}
+
+export default function ItemEditModal({
+  isVisible,
+  onClose,
+  item,
+  onSave,
+}: CartItemProps) {
   const [price, setPrice] = useState('');
   const [discount, setDiscount] = useState('');
   const [gst, setGst] = useState(0);
 
-  // Sync state when item changes
   useEffect(() => {
-    if (item) {
+    if (item && isVisible) {
       setPrice(item.price.toString());
       setDiscount((item.lineDiscount || 0).toString());
       setGst(item.taxRate || 0);
     }
   }, [item, isVisible]);
+  console.log('item', item);
 
   const handleSave = () => {
     onSave({
@@ -47,12 +59,21 @@ export default function ItemEditModal({isVisible, onClose, item, onSave}) {
               {/* Handle Bar for Liquid Look */}
               <View style={styles.handle} />
 
-              <Text style={styles.title}>Edit Line Item</Text>
-              <Text style={styles.subtitle}>{item?.name}</Text>
+              <View style={styles.headerContainer}>
+                <View style={styles.titleWrapper}>
+                  <Text style={styles.labelCaps}>ITEM NAME</Text>
+                  <Text style={styles.titleText}>{item?.name}</Text>
+                </View>
+
+                <View style={styles.stockBadge}>
+                  <Text style={styles.stockLabel}>STOCK</Text>
+                  <Text style={styles.stockValue}>{item?.stock}</Text>
+                </View>
+              </View>
 
               <View style={styles.form}>
                 {/* Selling Price */}
-                <Text style={styles.label}>Selling Price (per unit)</Text>
+                {/* <Text style={styles.label}>Selling Price (per unit)</Text>
                 <View style={styles.inputWrapper}>
                   <Text style={styles.currency}>₹</Text>
                   <TextInput
@@ -61,7 +82,7 @@ export default function ItemEditModal({isVisible, onClose, item, onSave}) {
                     value={price}
                     onChangeText={setPrice}
                   />
-                </View>
+                </View> */}
 
                 {/* Line Discount */}
                 <Text style={styles.label}>Item Discount (Total ₹)</Text>
@@ -123,6 +144,55 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9', // Very subtle divider
+    marginBottom: 20,
+  },
+  titleWrapper: {
+    flex: 1,
+    marginRight: 12,
+  },
+  labelCaps: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94a3b8', // Muted blue-grey
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  titleText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#1e293b', // Deep slate
+    letterSpacing: -0.5,
+  },
+  stockBadge: {
+    backgroundColor: '#f8fafc', // Light slate
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    minWidth: 65,
+  },
+  stockLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  stockValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#334155',
+  },
+
   handle: {
     width: 40,
     height: 5,

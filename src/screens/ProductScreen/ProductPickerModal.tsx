@@ -47,7 +47,7 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
       );
 
       const newItems = response.data.items || [];
-
+      console.log('newItems', newItems);
       // If page 1, replace list. If page > 1, append.
       setProducts(prev => (pageNum === 1 ? newItems : [...prev, ...newItems]));
       setHasMore(newItems.length === limit);
@@ -73,11 +73,6 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
       fetchProducts(page + 1);
     }
   };
-  const filteredProducts = useMemo(() => {
-    return products.filter(p =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-  }, [products, searchQuery]);
 
   const cartCount = cart.reduce((s: number, i: any) => s + i.quantity, 0);
 
@@ -95,7 +90,9 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
         <Text style={styles.productName} numberOfLines={2}>
           {item.name}
         </Text>
-
+        <View style={styles.stockMiniBadge}>
+          <Text style={styles.stockMiniBadgeText}>{item.stockQty}</Text>
+        </View>
         {isInCart ? (
           <View style={styles.qtyContainer}>
             <TouchableOpacity
@@ -196,7 +193,7 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{cartCount}</Text>
               </View>
-              <Text style={styles.footerButtonText}>Review Selections</Text>
+
               <Text style={styles.footerArrow}>→</Text>
             </TouchableOpacity>
           </View>
@@ -282,7 +279,17 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     flex: 1,
   },
-
+  stockMiniBadge: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  stockMiniText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748b',
+  },
   qtyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -325,11 +332,11 @@ const styles = StyleSheet.create({
   footerFloating: {
     position: 'absolute',
     bottom: 30,
-    left: 20,
+
     right: 20,
     backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 4,
+    borderRadius: 24,
+    padding: 1,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 10},
     shadowOpacity: 0.2,
