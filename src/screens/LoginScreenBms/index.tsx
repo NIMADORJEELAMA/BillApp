@@ -114,13 +114,12 @@ const LoginScreenBms = () => {
             <View style={styles.header}>
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('../../assets/images/logo11.jpg')} // Update this path!
+                  source={require('../../assets/images/logo11.jpg')} // Update this path!as
                   style={styles.logoImage}
                   resizeMode="cover"
                 />
               </View>
-              <Text style={styles.title}>Gairigaon</Text>
-              <Text style={styles.subtitle}>Hill Top Eco Tourism</Text>
+              <Text style={styles.title}>Bill App</Text>
             </View>
 
             {/* Form */}
