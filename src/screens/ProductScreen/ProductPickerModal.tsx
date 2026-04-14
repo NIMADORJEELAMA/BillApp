@@ -31,7 +31,10 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   useEffect(() => {
-    if (isVisible) fetchProducts();
+    // Only fetch if visible AND we don't have products yet
+    if (isVisible && products.length === 0) {
+      fetchProducts();
+    }
   }, [isVisible]);
 
   const fetchProducts = async (pageNum = 1, isSearching = false) => {
@@ -83,43 +86,50 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
 
     return (
       <View style={[styles.gridItem, isInCart && styles.gridItemActive]}>
-        <View style={styles.priceTag}>
-          <Text style={styles.priceTagText}>₹{item.price}</Text>
+        {/* Top Row: Price & Stock */}
+        <View style={styles.cardHeader}>
+          <View style={styles.priceTag}>
+            <Text style={styles.priceTagText}>₹{item.price}</Text>
+          </View>
+          <View style={styles.stockMiniBadge}>
+            <Text style={styles.stockMiniBadgeText}>{item.stockQty}</Text>
+          </View>
         </View>
 
+        {/* Product Name */}
         <Text style={styles.productName} numberOfLines={2}>
           {item.name}
         </Text>
-        <View style={styles.stockMiniBadge}>
-          <Text style={styles.stockMiniBadgeText}>{item.stockQty}</Text>
+
+        {/* Action Area */}
+        <View style={styles.actionArea}>
+          {isInCart ? (
+            <View style={styles.qtyContainer}>
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={() => dispatch(updateQty({id: item.id, delta: -1}))}>
+                <Text style={styles.qtyBtnText}>−</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.qtyValue}>{quantity}</Text>
+
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={() => dispatch(updateQty({id: item.id, delta: 1}))}>
+                <Text style={styles.qtyBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => dispatch(addToCart(item))}>
+              <Text style={styles.addBtnText}>Add</Text>
+            </TouchableOpacity>
+          )}
         </View>
-        {isInCart ? (
-          <View style={styles.qtyContainer}>
-            <TouchableOpacity
-              style={styles.qtyBtn}
-              onPress={() => dispatch(updateQty({id: item.id, delta: -1}))}>
-              <Text style={styles.qtyBtnText}>−</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.qtyValue}>{quantity}</Text>
-
-            <TouchableOpacity
-              style={styles.qtyBtn}
-              onPress={() => dispatch(updateQty({id: item.id, delta: 1}))}>
-              <Text style={styles.qtyBtnText}>+</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => dispatch(addToCart(item))}>
-            <Text style={styles.addBtnText}>+ ADD</Text>
-          </TouchableOpacity>
-        )}
       </View>
     );
   };
-
   return (
     <Modal
       visible={isVisible}
@@ -240,88 +250,195 @@ const styles = StyleSheet.create({
   listContainer: {paddingHorizontal: 10, paddingBottom: 100},
   gridItem: {
     width: ITEM_WIDTH,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     margin: 6,
-    padding: 12,
-    borderRadius: 16,
-    alignItems: 'center',
+    padding: 10,
+    borderRadius: 20, // Softer corners
     borderWidth: 1,
     borderColor: '#f1f5f9',
-    // Shadow for iOS
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    // Elevation for Android
-    elevation: 2,
-    minHeight: 140,
+    // Advanced Shadow
+    shadowColor: '#64748b',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    minHeight: 150,
     justifyContent: 'space-between',
   },
   gridItemActive: {
     borderColor: '#6366f1',
-    backgroundColor: '#f5f7ff',
+    backgroundColor: '#f8faff',
     borderWidth: 1.5,
+    shadowOpacity: 0.15,
+    shadowColor: '#6366f1',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    width: '100%',
   },
   priceTag: {
-    backgroundColor: '#eef2ff',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  priceTagText: {fontSize: 11, fontWeight: '800', color: '#6366f1'},
-  productName: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
-    textAlign: 'center',
-    lineHeight: 16,
-    flex: 1,
-  },
-  stockMiniBadge: {
     backgroundColor: '#f1f5f9',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  priceTagText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1e293b',
+  },
+  stockMiniBadge: {
+    // Elegant minimal stock indicator
+    paddingHorizontal: 4,
+    backgroundColor: '#6FCF97',
     borderRadius: 6,
   },
-  stockMiniText: {
+  stockMiniBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#64748b',
+    fontWeight: '800',
+    color: '#FFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  productName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+    textAlign: 'center', // Left align looks more professional in grids
+    lineHeight: 18,
+    marginVertical: 4,
+    height: 36, // Keep consistent height for grid alignment
+  },
+  actionArea: {
+    marginTop: 8,
+    width: '100%',
   },
   qtyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginTop: 10,
+    backgroundColor: '#6366f1', // Solid color for active state
+    borderRadius: 12,
     padding: 2,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   qtyBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    width: 26,
+    height: 26,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  qtyBtnText: {fontSize: 16, fontWeight: 'bold', color: '#1e293b'},
-  qtyValue: {fontSize: 14, fontWeight: '800', color: '#6366f1'},
-
+  qtyBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  qtyValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#fff',
+  },
   addBtn: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#fff',
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 12,
     width: '100%',
     alignItems: 'center',
-    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  addBtnText: {fontSize: 11, fontWeight: '800', color: '#fff'},
+  addBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6366f1',
+  },
+  // gridItem: {
+  //   width: ITEM_WIDTH,
+  //   backgroundColor: '#fff',
+  //   margin: 6,
+  //   padding: 12,
+  //   borderRadius: 16,
+  //   alignItems: 'center',
+  //   borderWidth: 1,
+  //   borderColor: '#f1f5f9',
+  //   // Shadow for iOS
+  //   shadowColor: '#000',
+  //   shadowOffset: {width: 0, height: 2},
+  //   shadowOpacity: 0.05,
+  //   shadowRadius: 4,
+  //   // Elevation for Android
+  //   elevation: 2,
+  //   minHeight: 140,
+  //   justifyContent: 'space-between',
+  // },
+  // gridItemActive: {
+  //   borderColor: '#6366f1',
+  //   backgroundColor: '#f5f7ff',
+  //   borderWidth: 1.5,
+  // },
+  // priceTag: {
+  //   backgroundColor: '#eef2ff',
+  //   paddingHorizontal: 8,
+  //   paddingVertical: 2,
+  //   borderRadius: 6,
+  //   alignSelf: 'flex-start',
+  //   marginBottom: 8,
+  // },
+  // priceTagText: {fontSize: 11, fontWeight: '800', color: '#6366f1'},
+  // productName: {
+  //   fontSize: 12,
+  //   fontWeight: '700',
+  //   color: '#334155',
+  //   textAlign: 'center',
+  //   lineHeight: 16,
+  //   flex: 1,
+  // },
+  // stockMiniBadge: {
+  //   backgroundColor: '#f1f5f9',
+  //   paddingHorizontal: 6,
+  //   paddingVertical: 2,
+  //   borderRadius: 6,
+  // },
+  // stockMiniBadgeText: {
+  //   fontSize: 10,
+  //   fontWeight: '700',
+  //   color: '#64748b',
+  // },
+  // qtyContainer: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   justifyContent: 'space-between',
+  //   width: '100%',
+  //   backgroundColor: '#fff',
+  //   borderRadius: 10,
+  //   marginTop: 10,
+  //   padding: 2,
+  //   borderWidth: 1,
+  //   borderColor: '#e2e8f0',
+  // },
+  // qtyBtn: {
+  //   width: 28,
+  //   height: 28,
+  //   borderRadius: 8,
+  //   backgroundColor: '#f8fafc',
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  // },
+  // qtyBtnText: {fontSize: 16, fontWeight: 'bold', color: '#1e293b'},
+  // qtyValue: {fontSize: 14, fontWeight: '800', color: '#6366f1'},
+
+  // addBtn: {
+  //   backgroundColor: '#6366f1',
+  //   paddingVertical: 8,
+  //   borderRadius: 10,
+  //   width: '100%',
+  //   alignItems: 'center',
+  //   marginTop: 10,
+  // },
+  // addBtnText: {fontSize: 11, fontWeight: '800', color: '#fff'},
 
   loaderContainer: {marginTop: 100, alignItems: 'center'},
   loaderText: {marginTop: 10, color: '#94a3b8', fontSize: 14},

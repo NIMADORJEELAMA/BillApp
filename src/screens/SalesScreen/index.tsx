@@ -35,6 +35,8 @@ import ScanIcon from '../../assets/Icons/scan.svg';
 
 import ProductScreen from '../ProductScreen/ProductFormModal';
 import ItemEditModal from './ItemEditModal';
+import GlassButton from '../../components/GlassButton/GlassButton';
+import CustomButton from '../../components/CustomButton';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
@@ -259,12 +261,19 @@ export default function SalesScreen() {
     Camera.requestCameraPermission().then(status =>
       setHasPermission(status === 'granted'),
     );
+
     beepSound.current = new Sound('beep.mp3', Sound.MAIN_BUNDLE, error => {
       if (error) console.log('Sound load error', error);
     });
-    return () => beepSound.current?.release();
-  }, []);
 
+    // Explicitly return void by using curly braces
+    return () => {
+      if (beepSound.current) {
+        beepSound.current.release();
+        beepSound.current = null;
+      }
+    };
+  }, []);
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back');
 
@@ -669,19 +678,19 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {color: '#64748b'},
   summaryValueSmall: {fontWeight: '600'},
-  divider: {height: 1, backgroundColor: '#f1f5f9', marginVertical: 10},
+  divider: {height: 1, backgroundColor: '#f1f5f9', marginVertical: 2},
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   totalLabelMain: {fontWeight: '700', color: '#94a3b8'},
-  totalAmountMain: {fontSize: 24, fontWeight: '900', color: '#0f172a'},
+  totalAmountMain: {fontSize: 22, fontWeight: '900', color: '#0f172a'},
   footerActionRow: {flexDirection: 'row', gap: 12},
   btnPrimary: {
     flex: 1.5,
-    height: 56,
-    backgroundColor: '#1e293b',
+    height: 44,
+    backgroundColor: '#111',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -689,15 +698,15 @@ const styles = StyleSheet.create({
   btnPrimaryText: {color: '#fff', fontWeight: '800'},
   btnSecondary: {
     flex: 1,
-    height: 56,
+    height: 44,
     backgroundColor: '#f8fafc',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderWidth: 2,
+    borderColor: '#848688',
   },
-  btnSecondaryText: {color: '#475569', fontWeight: '700'},
+  btnSecondaryText: {color: '#000', fontWeight: '700'},
   btnDisabled: {opacity: 0.5},
   emptyContainer: {marginTop: 40, alignItems: 'center'},
   emptyText: {color: '#cbd5e1', fontSize: 16},

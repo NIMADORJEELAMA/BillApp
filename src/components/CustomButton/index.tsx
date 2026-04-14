@@ -61,11 +61,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   solidButton: {
-    backgroundColor: '#ff5e8e',
+    backgroundColor: '#000',
   },
   outlineButton: {
     borderWidth: 1,
-    borderColor: '#ff5e8e',
+    borderColor: '#000',
     backgroundColor: '#fff',
   },
   buttonText: {
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   outlineText: {
-    color: '#ff5e8e',
+    color: '#000',
   },
   disabled: {
     opacity: 0.5,
