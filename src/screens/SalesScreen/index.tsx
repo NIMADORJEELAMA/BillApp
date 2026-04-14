@@ -37,6 +37,7 @@ import ProductScreen from '../ProductScreen/ProductFormModal';
 import ItemEditModal from './ItemEditModal';
 import GlassButton from '../../components/GlassButton/GlassButton';
 import CustomButton from '../../components/CustomButton';
+import CustomDropdown from '../../components/CustomDropdown';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
@@ -57,6 +58,9 @@ export default function SalesScreen() {
   const [scannedBarcode, setScannedBarcode] = useState('');
   const [editingItem, setEditingItem] = useState(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [paymentMode, setPaymentMode] = useState('CASH');
+  const [splitCash, setSplitCash] = useState('');
+  const [splitOnline, setSplitOnline] = useState('');
   // Refs for Scanner Debounce
   const lastScannedCode = useRef<string | null>(null);
   const lastScanTime = useRef<number>(0);
@@ -70,8 +74,22 @@ export default function SalesScreen() {
     setDiscountPercent('0');
     setManualDiscount('0');
     setGstPercentInput('0');
+    setPaymentMode('CASH');
   };
+  const paymentOptions = [
+    {label: 'Cash', value: 'CASH'},
+    {label: 'Online', value: 'UPI'},
+    {label: 'Card', value: 'CARD'},
+    {label: 'Split', value: 'SPLIT'},
 
+    {label: 'Credit', value: 'CREDIT'},
+  ];
+  const handleCashChange = (val: string) => {
+    setSplitCash(val);
+    const cashAmount = parseFloat(val) || 0;
+    const remaining = Math.max(0, finalAmount - cashAmount);
+    setSplitOnline(remaining.toFixed(2));
+  };
   // Update Calculations
   const subtotal = useMemo(() => {
     return cart.reduce((total, item) => {
@@ -196,9 +214,27 @@ export default function SalesScreen() {
     if (!cart.length || loading) return;
 
     setLoading(true);
+    let cash = 0;
+    let online = 0;
+    let card = 0;
+
+    if (paymentMode === 'CASH') {
+      cash = finalAmount;
+    } else if (paymentMode === 'UPI') {
+      online = finalAmount;
+    } else if (paymentMode === 'CARD') {
+      card = finalAmount;
+    } else if (paymentMode === 'SPLIT') {
+      cash = parseFloat(splitCash) || 0;
+      online = parseFloat(splitOnline) || 0;
+      // card = parseFloat(splitCard) || 0; (if you add a third field)
+    }
     try {
       const payload = {
-        paymentMode: 'CASH',
+        paymentMode: paymentMode,
+        amountCash: cash,
+        amountOnline: online,
+        amountCard: card,
         totalAmount: subtotal,
         // FIX: Use finalDiscount (local state) instead of the Redux 'discount' variable
         discount: finalDiscount,
@@ -242,6 +278,7 @@ export default function SalesScreen() {
           }
         }
         dispatch(clearCart());
+
         resetForm();
 
         Toast.show({type: 'success', text1: 'Transaction Complete'});
@@ -292,6 +329,13 @@ export default function SalesScreen() {
                 onPress={() => setPickerVisible(true)}>
                 <Text style={styles.browseButtonText}>+ Browse Products</Text>
               </TouchableOpacity>
+              <View style={{width: 110, justifyContent: 'center'}}>
+                <CustomDropdown
+                  options={paymentOptions}
+                  selectedValue={paymentMode}
+                  onSelect={val => setPaymentMode(val)}
+                />
+              </View>
 
               <TouchableOpacity
                 style={[
@@ -430,14 +474,43 @@ export default function SalesScreen() {
           {/* 🔹 FOOTER (KEYBOARD SAFE) */}
           <View style={styles.footerContainer}>
             <View style={styles.summarySection}>
+              {paymentMode === 'SPLIT' && (
+                <View style={styles.splitInputContainer}>
+                  <Text style={styles.splitTitle}>Split Breakdown</Text>
+                  <View style={styles.editRow}>
+                    <Text style={styles.summaryLabel}>Cash Amount</Text>
+                    <View style={styles.inputWrapper}>
+                      <Text style={styles.inputPrefix}>₹</Text>
+                      <TextInput
+                        style={styles.inlineInput}
+                        keyboardType="numeric"
+                        value={splitCash}
+                        onChangeText={handleCashChange}
+                        placeholder="0.00"
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.editRow}>
+                    <Text style={styles.summaryLabel}>Online/UPI</Text>
+                    <View style={styles.inputWrapper}>
+                      <Text style={styles.inputPrefix}>₹</Text>
+                      <TextInput
+                        style={[styles.inlineInput, {color: '#6366f1'}]}
+                        keyboardType="numeric"
+                        value={splitOnline}
+                        onChangeText={setSplitOnline}
+                      />
+                    </View>
+                  </View>
+                </View>
+              )}
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Subtotal</Text>
                 <Text style={styles.summaryValueSmall}>
                   ₹{subtotal.toFixed(2)}
                 </Text>
               </View>
-              {/* Discount */}
-              {/* Discount Row */}
+
               <View style={styles.editRow}>
                 <Text style={styles.summaryLabel}>Discount</Text>
                 <View style={styles.inputGroup}>
@@ -621,6 +694,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
+  },
+  splitInputContainer: {
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
+  },
+  splitTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   editRow: {
     flexDirection: 'row',
