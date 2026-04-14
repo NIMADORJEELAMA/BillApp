@@ -33,8 +33,6 @@ const ReceiptViewModal: React.FC<ReceiptModalProps> = ({
           {/* Header */}
           {/* Header */}
 
-          {/* Header */}
-
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Order Receipt</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
