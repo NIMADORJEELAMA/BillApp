@@ -31,6 +31,9 @@ const ReceiptViewModal: React.FC<ReceiptModalProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.billModal}>
           {/* Header */}
+          {/* Header */}
+
+          {/* Header */}
 
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Order Receipt</Text>
