@@ -1,12 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {BLEPrinter} from 'react-native-thermal-receipt-printer-image-qr';
 
-export const connectAndPrint = async (
-  cart: any[],
-  subtotal: number,
-  discount: number,
-  finalAmount: number,
-) => {
+export const connectAndPrint = async (sale: any) => {
   try {
     const mac = await AsyncStorage.getItem('SAVED_PRINTER_MAC');
     if (!mac) throw new Error('Printer not configured.');
@@ -14,71 +9,87 @@ export const connectAndPrint = async (
     await BLEPrinter.init();
     await BLEPrinter.connectPrinter(mac);
 
-    // 58mm printers usually support 32 characters per line
     const MAX_CHARS = 32;
     const line = '-'.repeat(MAX_CHARS);
     const thickLine = '='.repeat(MAX_CHARS);
 
     let receipt = '';
 
-    // --- HEADER ---
-    receipt += '<C>RETAIL STORE</C>\n';
-    receipt += '<C>123 Business Avenue, City</C>\n';
-    receipt += `<C>Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString(
-      [],
-      {hour: '2-digit', minute: '2-digit'},
-    )}</C>\n`;
-    receipt += thickLine + '\n';
-
-    // --- COLUMN HEADERS (32 Chars Total) ---
-    // Item (12) | Rate (7) | Qty (4) | Total (9)
-    const hName = 'ITEM'.padEnd(12);
-    const hRate = 'RATE'.padStart(7);
-    const hQty = 'QTY'.padStart(4);
-    const hTotal = 'TOTAL'.padStart(9);
-    receipt += `${hName}${hRate}${hQty}${hTotal}\n`;
+    // ================= HEADER =================
+    receipt += '<C><B>MINIZEO RETAIL</B></C>\n';
+    receipt += `<C>Bill No: #${sale.billNumber}</C>\n`;
+    receipt += `<C>${new Date(sale.createdAt).toLocaleString()}</C>\n`;
+    receipt += `<C>Billed by: ${sale.user?.name || '-'}</C>\n`;
     receipt += line + '\n';
 
-    // --- ITEMS ---
-    cart.forEach(item => {
-      // Line 1: Full Name if it's long
-      if (item.name.length > 12) {
-        receipt += `${item.name.substring(0, MAX_CHARS)}\n`;
+    // ================= ITEMS =================
+    sale.items.forEach((item: any) => {
+      const name = item.product?.name || 'Item';
+      const price = parseFloat(item.price);
+      const qty = item.quantity;
+      const discount = parseFloat(item.lineDiscount) || 0;
+      const tax = item.taxRate || 0;
+
+      const baseTotal = price * qty;
+      const lineTotal = baseTotal - discount;
+
+      // Product Name (multi-line safe)
+      receipt += `${name}\n`;
+
+      // Price x Qty
+      receipt += ` ${price.toFixed(2)} x ${qty}\n`;
+
+      // GST
+      if (tax > 0) {
+        receipt += ` GST: ${tax}%\n`;
       }
 
-      // Line 2: The Grid (Price breakdown)
-      const name = (item.name.length > 12 ? '' : item.name).padEnd(12);
-      const rate = parseFloat(item.price).toFixed(2).padStart(7);
-      const qty = String(item.quantity).padStart(4);
-      const total = (item.price * item.quantity).toFixed(2).padStart(9);
+      // Item Discount
+      if (discount > 0) {
+        receipt += ` Disc: -${discount.toFixed(2)}\n`;
+      }
 
-      receipt += `${name}${rate}${qty}${total}\n`;
+      // Line Total (right aligned)
+      const totalStr = lineTotal.toFixed(2);
+      const spaces = MAX_CHARS - totalStr.length;
+      receipt += ' '.repeat(spaces > 0 ? spaces : 1) + totalStr + '\n';
+
+      receipt += line + '\n';
     });
 
-    // --- TOTALS ---
-    receipt += line + '\n';
-
-    // Helper to align label and value to edges
-    const formatTotalLine = (label: string, value: string) => {
+    // ================= TOTALS =================
+    const formatLine = (label: string, value: string) => {
       const spaces = MAX_CHARS - (label.length + value.length);
       return label + ' '.repeat(spaces > 0 ? spaces : 1) + value;
     };
 
-    receipt += formatTotalLine('Subtotal:', `${subtotal.toFixed(2)}`) + '\n';
-    receipt += formatTotalLine('Discount:', `-${discount.toFixed(2)}`) + '\n';
-    receipt += thickLine + '\n';
-    receipt += `${formatTotalLine(
-      'GRAND TOTAL:',
-      ` ${finalAmount.toFixed(2)}`,
-    )}\n`;
+    receipt +=
+      formatLine('Subtotal', `${parseFloat(sale.totalAmount).toFixed(2)}`) +
+      '\n';
+
+    if (parseFloat(sale.discount) > 0) {
+      receipt +=
+        formatLine('Order Disc', `-${parseFloat(sale.discount).toFixed(2)}`) +
+        '\n';
+    }
+
+    receipt +=
+      formatLine('GST', `${parseFloat(sale.taxAmount).toFixed(2)}`) + '\n';
+
     receipt += thickLine + '\n';
 
-    // --- FOOTER ---
-    receipt += '<C>Items Sold: ' + cart.length + '</C>\n';
-    receipt += '<C>Thank You! Visit Again</C>\n';
-    receipt += ''; // Extra feed for manual tearing
+    receipt +=
+      formatLine('GRAND TOTAL', `${parseFloat(sale.finalAmount).toFixed(2)}`) +
+      '\n';
+
+    receipt += thickLine + '\n';
+
+    // ================= FOOTER =================
+    receipt += `<C>Paid via: ${sale.paymentMode}</C>\n`;
+    receipt += '<C>Thank You! Visit Again</C>\n\n\n';
 
     await BLEPrinter.printBill(receipt);
+
     console.log('✅ Printed Successfully');
   } catch (error) {
     console.log('❌ Print Error:', error);

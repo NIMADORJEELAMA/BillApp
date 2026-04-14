@@ -159,13 +159,13 @@ export default function SalesListScreen() {
         quantity: i.quantity,
         price: parseFloat(i.price),
       }));
-
-      await connectAndPrint(
-        printItems,
-        parseFloat(selectedSale.totalAmount),
-        parseFloat(selectedSale.discount),
-        parseFloat(selectedSale.finalAmount),
-      );
+      connectAndPrint(selectedSale);
+      // await connectAndPrint(
+      //   printItems,
+      //   parseFloat(selectedSale.totalAmount),
+      //   parseFloat(selectedSale.discount),
+      //   parseFloat(selectedSale.finalAmount),
+      // );
       Toast.show({type: 'success', text1: 'Printing Receipt...'});
     } catch (error) {
       Toast.show({type: 'error', text1: 'Print failed. Check connection.'});
