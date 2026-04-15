@@ -472,6 +472,9 @@ export default function SalesScreen() {
             onSave={handleUpdateItem}
           />
 
+          {/* 🔹 FOOTER (KEYBOARD SAFE) */}
+          {/* 🔹 FOOTER (KEYBOARD SAFE) */}
+
           <View style={styles.footerContainer}>
             <View style={styles.summarySection}>
               {paymentMode === 'SPLIT' && (
