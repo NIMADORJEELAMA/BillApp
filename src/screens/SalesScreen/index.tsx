@@ -61,6 +61,7 @@ export default function SalesScreen() {
   const [paymentMode, setPaymentMode] = useState('CASH');
   const [splitCash, setSplitCash] = useState('');
   const [splitOnline, setSplitOnline] = useState('');
+  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   // Refs for Scanner Debounce
   const lastScannedCode = useRef<string | null>(null);
   const lastScanTime = useRef<number>(0);
@@ -78,7 +79,7 @@ export default function SalesScreen() {
   };
   const paymentOptions = [
     {label: 'Cash', value: 'CASH'},
-    {label: 'Online', value: 'UPI'},
+    {label: 'Online', value: 'ONLINE'},
     {label: 'Card', value: 'CARD'},
     {label: 'Split', value: 'SPLIT'},
 
@@ -220,7 +221,7 @@ export default function SalesScreen() {
 
     if (paymentMode === 'CASH') {
       cash = finalAmount;
-    } else if (paymentMode === 'UPI') {
+    } else if (paymentMode === 'ONLINE') {
       online = finalAmount;
     } else if (paymentMode === 'CARD') {
       card = finalAmount;
@@ -475,96 +476,110 @@ export default function SalesScreen() {
           <View style={styles.footerContainer}>
             <View style={styles.summarySection}>
               {paymentMode === 'SPLIT' && (
-                <View style={styles.splitInputContainer}>
-                  <Text style={styles.splitTitle}>Split Breakdown</Text>
-                  <View style={styles.editRow}>
-                    <Text style={styles.summaryLabel}>Cash Amount</Text>
-                    <View style={styles.inputWrapper}>
-                      <Text style={styles.inputPrefix}>₹</Text>
-                      <TextInput
-                        style={styles.inlineInput}
-                        keyboardType="numeric"
-                        value={splitCash}
-                        onChangeText={handleCashChange}
-                        placeholder="0.00"
-                      />
-                    </View>
+                <View style={styles.minimalSplitRow}>
+                  <Text style={styles.splitLabelSmall}>Split:</Text>
+
+                  <View style={styles.miniInputGroup}>
+                    <Text style={styles.miniPrefix}>Cash</Text>
+                    <TextInput
+                      style={styles.miniInput}
+                      keyboardType="numeric"
+                      value={splitCash}
+                      onChangeText={handleCashChange}
+                      placeholder="0"
+                    />
                   </View>
-                  <View style={styles.editRow}>
-                    <Text style={styles.summaryLabel}>Online/UPI</Text>
-                    <View style={styles.inputWrapper}>
-                      <Text style={styles.inputPrefix}>₹</Text>
-                      <TextInput
-                        style={[styles.inlineInput, {color: '#6366f1'}]}
-                        keyboardType="numeric"
-                        value={splitOnline}
-                        onChangeText={setSplitOnline}
-                      />
-                    </View>
+
+                  <View style={styles.miniInputGroup}>
+                    <Text style={[styles.miniPrefix, {color: '#6366f1'}]}>
+                      Online
+                    </Text>
+                    <TextInput
+                      style={[styles.miniInput, {color: '#6366f1'}]}
+                      keyboardType="numeric"
+                      value={splitOnline}
+                      onChangeText={setSplitOnline}
+                      placeholder="0"
+                    />
                   </View>
                 </View>
               )}
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Subtotal</Text>
-                <Text style={styles.summaryValueSmall}>
-                  ₹{subtotal.toFixed(2)}
+              <TouchableOpacity
+                style={styles.expandButton}
+                onPress={() => setIsDetailsVisible(!isDetailsVisible)}>
+                <Text style={styles.expandButtonText}>
+                  {isDetailsVisible
+                    ? 'Hide Details ▲'
+                    : 'Show Details & Discounts ▼'}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              <View style={styles.editRow}>
-                <Text style={styles.summaryLabel}>Discount</Text>
-                <View style={styles.inputGroup}>
-                  {/* Percentage Input */}
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      style={styles.inlineInput}
-                      keyboardType="numeric"
-                      value={discountPercent}
-                      onChangeText={handleDiscountPercentChange}
-                    />
-                    <Text style={styles.inputSuffix}>%</Text>
+              {isDetailsVisible && (
+                <View style={styles.collapsibleContent}>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Subtotal</Text>
+                    <Text style={styles.summaryValueSmall}>
+                      ₹{subtotal.toFixed(2)}
+                    </Text>
                   </View>
 
-                  {/* Amount Input */}
-                  <View style={styles.inputWrapper}>
-                    <Text style={styles.inputPrefix}>₹</Text>
-                    <TextInput
-                      style={styles.inlineInput}
-                      keyboardType="numeric"
-                      value={manualDiscount}
-                      onChangeText={handleManualDiscountChange}
-                    />
+                  <View style={styles.editRow}>
+                    <Text style={styles.summaryLabel}>Discount</Text>
+                    <View style={styles.inputGroup}>
+                      {/* Percentage Input */}
+                      <View style={styles.inputWrapper}>
+                        <TextInput
+                          style={styles.inlineInput}
+                          keyboardType="numeric"
+                          value={discountPercent}
+                          onChangeText={handleDiscountPercentChange}
+                        />
+                        <Text style={styles.inputSuffix}>%</Text>
+                      </View>
+
+                      {/* Amount Input */}
+                      <View style={styles.inputWrapper}>
+                        <Text style={styles.inputPrefix}>₹</Text>
+                        <TextInput
+                          style={styles.inlineInput}
+                          keyboardType="numeric"
+                          value={manualDiscount}
+                          onChangeText={handleManualDiscountChange}
+                        />
+                      </View>
+                    </View>
                   </View>
+                  {/* GST Row */}
+                  <View style={styles.editRow}>
+                    <Text style={styles.summaryLabel}>GST</Text>
+                    <View style={styles.inputGroup}>
+                      {/* Percentage Input */}
+                      <View style={styles.inputWrapper}>
+                        <TextInput
+                          style={styles.inlineInput}
+                          keyboardType="numeric"
+                          value={gstPercentInput}
+                          onChangeText={setGstPercentInput}
+                        />
+                        <Text style={styles.inputSuffix}>%</Text>
+                      </View>
+
+                      {/* Amount Input */}
+                      <View style={styles.inputWrapper}>
+                        <Text style={styles.inputPrefix}>₹</Text>
+                        <TextInput
+                          style={[styles.inlineInput, {color: '#94a3b8'}]}
+                          keyboardType="numeric"
+                          value={finalGstAmount.toFixed(2)}
+                          editable={false}
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.divider} />
                 </View>
-              </View>
-              {/* GST Row */}
-              <View style={styles.editRow}>
-                <Text style={styles.summaryLabel}>GST</Text>
-                <View style={styles.inputGroup}>
-                  {/* Percentage Input */}
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      style={styles.inlineInput}
-                      keyboardType="numeric"
-                      value={gstPercentInput}
-                      onChangeText={setGstPercentInput}
-                    />
-                    <Text style={styles.inputSuffix}>%</Text>
-                  </View>
-
-                  {/* Amount Input */}
-                  <View style={styles.inputWrapper}>
-                    <Text style={styles.inputPrefix}>₹</Text>
-                    <TextInput
-                      style={[styles.inlineInput, {color: '#94a3b8'}]}
-                      keyboardType="numeric"
-                      value={finalGstAmount.toFixed(2)}
-                      editable={false}
-                    />
-                  </View>
-                </View>
-              </View>
-              <View style={styles.divider} />
+              )}
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabelMain}>Total</Text>
                 <Text style={styles.totalAmountMain}>
@@ -689,28 +704,71 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     elevation: 10,
   },
+  expandButton: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    marginBottom: 8,
+    backgroundColor: '#f1f5f9', // Very light gray
+    borderRadius: 4,
+  },
+  expandButtonText: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  collapsibleContent: {
+    paddingBottom: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: '#e2e8f0', // Small visual cue that this is a sub-section
+    paddingLeft: 10,
+  },
   summarySection: {marginBottom: 15},
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  splitInputContainer: {
-    backgroundColor: '#f8fafc',
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderStyle: 'dashed',
+
+  minimalSplitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc', // Light grey background to distinguish the section
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    justifyContent: 'space-between',
   },
-  splitTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#94a3b8',
+  splitLabelSmall: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748b',
     textTransform: 'uppercase',
-    marginBottom: 8,
-    letterSpacing: 0.5,
+    marginRight: 8,
+  },
+  miniInputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  miniPrefix: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8',
+    marginRight: 4,
+  },
+  miniInput: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    minWidth: 60,
+    textAlign: 'right',
   },
   editRow: {
     flexDirection: 'row',
@@ -779,7 +837,7 @@ const styles = StyleSheet.create({
   footerActionRow: {flexDirection: 'row', gap: 12},
   btnPrimary: {
     flex: 1.5,
-    height: 44,
+    height: 46,
     backgroundColor: '#111',
     borderRadius: 16,
     justifyContent: 'center',
@@ -788,7 +846,7 @@ const styles = StyleSheet.create({
   btnPrimaryText: {color: '#fff', fontWeight: '800'},
   btnSecondary: {
     flex: 1,
-    height: 44,
+    height: 46,
     backgroundColor: '#f8fafc',
     borderRadius: 16,
     justifyContent: 'center',

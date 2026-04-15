@@ -16,6 +16,8 @@ import {useDispatch, useSelector} from 'react-redux';
 import {addToCart, updateQty} from '../../redux/slices/cartSlice';
 import axiosInstance from '../../services/axiosInstance';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import ProductFormModal from './ProductFormModal';
+import SearchBar from '../../components/Searchbar';
 
 const {width} = Dimensions.get('window');
 const ITEM_WIDTH = (width - 48) / 3;
@@ -29,6 +31,8 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   useEffect(() => {
     // Only fetch if visible AND we don't have products yet
@@ -150,21 +154,14 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
             <Text style={styles.closeIcon}>✕</Text>
           </TouchableOpacity>
         </View>
-
-        {/* SEARCH BAR */}
-        <View style={styles.searchSection}>
-          <View style={styles.searchWrapper}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by name or category..."
-              placeholderTextColor="#94a3b8"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              clearButtonMode="while-editing"
-            />
-          </View>
-        </View>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search..."
+        />
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <Text>+</Text>
+        </TouchableOpacity>
 
         {loading ? (
           <View style={styles.loaderContainer}>
@@ -209,6 +206,12 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
           </View>
         )}
       </SafeAreaView>
+      <ProductFormModal
+        isVisible={modalVisible}
+        product={selectedProduct}
+        onClose={() => setModalVisible(false)}
+        onSuccess={() => fetchProducts()}
+      />
     </Modal>
   );
 }
