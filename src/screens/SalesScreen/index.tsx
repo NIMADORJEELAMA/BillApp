@@ -474,7 +474,6 @@ export default function SalesScreen() {
 
           {/* 🔹 FOOTER (KEYBOARD SAFE) */}
           {/* 🔹 FOOTER (KEYBOARD SAFE) */}
-          {/* 🔹 FOOTER (KEYBOARD SAFE) */}
 
           <View style={styles.footerContainer}>
             <View style={styles.summarySection}>
