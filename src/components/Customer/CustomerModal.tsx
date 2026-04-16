@@ -41,7 +41,6 @@ const CustomerModal = ({isVisible, onClose, onSelect}) => {
     setSearch(val);
 
     // Clear previous timeout
-    // Clear previous timeout
 
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
