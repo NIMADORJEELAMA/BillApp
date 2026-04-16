@@ -35,9 +35,9 @@ import ScanIcon from '../../assets/Icons/scan.svg';
 
 import ProductScreen from '../ProductScreen/ProductFormModal';
 import ItemEditModal from './ItemEditModal';
-import GlassButton from '../../components/GlassButton/GlassButton';
-import CustomButton from '../../components/CustomButton';
+
 import CustomDropdown from '../../components/CustomDropdown';
+import CustomerModal from '../../components/Customer/CustomerModal';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
@@ -62,6 +62,8 @@ export default function SalesScreen() {
   const [splitCash, setSplitCash] = useState('');
   const [splitOnline, setSplitOnline] = useState('');
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isCustomerModalVisible, setIsCustomerModalVisible] = useState(false);
   // Refs for Scanner Debounce
   const lastScannedCode = useRef<string | null>(null);
   const lastScanTime = useRef<number>(0);
@@ -76,6 +78,7 @@ export default function SalesScreen() {
     setManualDiscount('0');
     setGstPercentInput('0');
     setPaymentMode('CASH');
+    setSelectedCustomer(null);
   };
   const paymentOptions = [
     {label: 'Cash', value: 'CASH'},
@@ -233,6 +236,8 @@ export default function SalesScreen() {
     try {
       const payload = {
         paymentMode: paymentMode,
+        customerId: selectedCustomer?.id || null, // Include customer ID
+        customerName: selectedCustomer?.name || 'Walk-in Customer',
         amountCash: cash,
         amountOnline: online,
         amountCard: card,
@@ -330,6 +335,35 @@ export default function SalesScreen() {
                 onPress={() => setPickerVisible(true)}>
                 <Text style={styles.browseButtonText}>+ Browse Products</Text>
               </TouchableOpacity>
+              {/* Inside topActionBar, replace the + Add Customers button */}
+              <TouchableOpacity
+                style={[
+                  styles.browseButton,
+                  selectedCustomer && {
+                    borderColor: '#6366f1',
+                    backgroundColor: '#f5f3ff',
+                  },
+                ]}
+                onPress={() => setIsCustomerModalVisible(true)}>
+                <Text
+                  style={[
+                    styles.browseButtonText,
+                    selectedCustomer && {color: '#6366f1'},
+                  ]}>
+                  {selectedCustomer
+                    ? `👤 ${selectedCustomer.name}`
+                    : '+ Add Customer'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Optional: Add a small 'X' to clear customer if one is selected */}
+              {selectedCustomer && (
+                <TouchableOpacity
+                  style={styles.clearCustomerBtn}
+                  onPress={() => setSelectedCustomer(null)}>
+                  <Text style={{color: '#ef4444', fontWeight: 'bold'}}>✕</Text>
+                </TouchableOpacity>
+              )}
               <View style={{width: 110, justifyContent: 'center'}}>
                 <CustomDropdown
                   options={paymentOptions}
@@ -472,9 +506,6 @@ export default function SalesScreen() {
             onSave={handleUpdateItem}
           />
 
-          {/* 🔹 FOOTER (KEYBOARD SAFE) */}
-          {/* 🔹 FOOTER (KEYBOARD SAFE) */}
-
           <View style={styles.footerContainer}>
             <View style={styles.summarySection}>
               {paymentMode === 'SPLIT' && (
@@ -519,6 +550,14 @@ export default function SalesScreen() {
               {isDetailsVisible && (
                 <View style={styles.collapsibleContent}>
                   <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Customer</Text>
+                    <Text
+                      style={[
+                        styles.summaryValueSmall,
+                        {color: selectedCustomer ? '#6366f1' : '#94a3b8'},
+                      ]}>
+                      {selectedCustomer ? selectedCustomer.name : 'Walk-in'}
+                    </Text>
                     <Text style={styles.summaryLabel}>Subtotal</Text>
                     <Text style={styles.summaryValueSmall}>
                       ₹{subtotal.toFixed(2)}
@@ -605,7 +644,11 @@ export default function SalesScreen() {
               </TouchableOpacity>
             </View>
           </View>
-
+          <CustomerModal
+            isVisible={isCustomerModalVisible}
+            onClose={() => setIsCustomerModalVisible(false)}
+            onSelect={customer => setSelectedCustomer(customer)}
+          />
           <ProductScreen
             isVisible={isAddModalVisible}
             onClose={() => setIsAddModalVisible(false)}
@@ -725,6 +768,15 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     borderLeftColor: '#e2e8f0', // Small visual cue that this is a sub-section
     paddingLeft: 10,
+  },
+  clearCustomerBtn: {
+    position: 'absolute',
+    right: 125, // Adjust based on your layout spacing
+    top: 18,
+    backgroundColor: '#fee2e2',
+    padding: 4,
+    borderRadius: 10,
+    zIndex: 10,
   },
   summarySection: {marginBottom: 15},
   summaryRow: {
