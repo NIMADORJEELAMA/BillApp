@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#6366f1', // Solid color for active state
+    backgroundColor: '#6366f1',
     borderRadius: 12,
     padding: 2,
   },
