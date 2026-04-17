@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#334155',
-    textAlign: 'center', // Left align looks more professional in sdaf
+    textAlign: 'center', // Left align looks more
     lineHeight: 18,
     marginVertical: 4,
     height: 36, // Keep consistent height for grid alignment
