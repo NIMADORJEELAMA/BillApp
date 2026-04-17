@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     textAlign: 'center', // Left align looks more
     lineHeight: 18,
     marginVertical: 4,
-    height: 36, // Keep consistent height for grid alignment
+    height: 36,
   },
   actionArea: {
     marginTop: 8,
