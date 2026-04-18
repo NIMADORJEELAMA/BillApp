@@ -61,7 +61,7 @@ const ProfileScreen = () => {
                 onPress={() => navigation.navigate('Staff')}
                 LeftIcon={Filter}
                 RightIcon={ArrowRight}
-                // rightLabel="Next"
+                // rightLabel="Next"sdf
                 // type="outline"
                 iconColor={'#000'}
               />

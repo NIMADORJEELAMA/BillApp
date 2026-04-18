@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   stockMiniBadge: {
-    // Elegant minimal stock indicator sdgfdsg
+    // Elegant minimal stock indicator
     paddingHorizontal: 4,
     backgroundColor: '#6FCF97',
     borderRadius: 6,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#334155',
-    textAlign: 'center', // Left align looks more
+    textAlign: 'center',
     lineHeight: 18,
     marginVertical: 4,
     height: 36,
