@@ -294,7 +294,6 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   stockMiniBadge: {
-    // Elegant minimal stock indicator
     paddingHorizontal: 4,
     backgroundColor: '#6FCF97',
     borderRadius: 6,
