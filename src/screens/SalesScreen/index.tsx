@@ -328,43 +328,40 @@ export default function SalesScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
         <View style={styles.container}>
           {/* 🔹 TOP SECTION */}
-          <View>
+          <View style={styles.container}>
             <View style={styles.topActionBar}>
-              <TouchableOpacity
-                style={styles.browseButton}
-                onPress={() => setPickerVisible(true)}>
-                <Text style={styles.browseButtonText}>+ Browse Products</Text>
-              </TouchableOpacity>
-              {/* Inside topActionBar, replace the + Add Customers button */}
-              <TouchableOpacity
-                style={[
-                  styles.browseButton,
-                  selectedCustomer && {
-                    borderColor: '#6366f1',
-                    backgroundColor: '#f5f3ff',
-                  },
-                ]}
-                onPress={() => setIsCustomerModalVisible(true)}>
-                <Text
-                  style={[
-                    styles.browseButtonText,
-                    selectedCustomer && {color: '#6366f1'},
-                  ]}>
-                  {selectedCustomer
-                    ? `👤 ${selectedCustomer.name}`
-                    : '+ Add Customer'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Optional: Add a small 'X' to clear customer if one is selected */}
-              {selectedCustomer && (
+              {/* Left Section: Action Buttons */}
+              <View style={styles.buttonGroup}>
                 <TouchableOpacity
-                  style={styles.clearCustomerBtn}
-                  onPress={() => setSelectedCustomer(null)}>
-                  <Text style={{color: '#ef4444', fontWeight: 'bold'}}>✕</Text>
+                  style={styles.browseButton}
+                  onPress={() => setPickerVisible(true)}>
+                  <Text style={styles.browseButtonText}>+ Products</Text>
                 </TouchableOpacity>
-              )}
-              <View style={{width: 110, justifyContent: 'center'}}>
+
+                <TouchableOpacity
+                  style={[
+                    styles.browseButton,
+                    selectedCustomer && styles.selectedButtonActive,
+                  ]}
+                  onPress={() => setIsCustomerModalVisible(true)}>
+                  <Text
+                    style={[
+                      styles.browseButtonText,
+                      selectedCustomer && {color: '#6366f1'},
+                    ]}>
+                    {selectedCustomer
+                      ? ` ${
+                          selectedCustomer.name.length > 10
+                            ? selectedCustomer.name.slice(0, 10) + '..'
+                            : selectedCustomer.name
+                        }`
+                      : '+ Customer'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Center Section: Dropdown */}
+              <View style={styles.dropdownContainer}>
                 <CustomDropdown
                   options={paymentOptions}
                   selectedValue={paymentMode}
@@ -372,6 +369,7 @@ export default function SalesScreen() {
                 />
               </View>
 
+              {/* Right Section: Camera Toggle */}
               <TouchableOpacity
                 style={[
                   styles.cameraToggleButton,
@@ -386,6 +384,7 @@ export default function SalesScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Camera Preview Section */}
             {isCameraVisible && (
               <View style={styles.cameraContainer}>
                 {device && hasPermission ? (
@@ -550,14 +549,14 @@ export default function SalesScreen() {
               {isDetailsVisible && (
                 <View style={styles.collapsibleContent}>
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Customer</Text>
+                    {/* <Text style={styles.summaryLabel}>Customer</Text>
                     <Text
                       style={[
                         styles.summaryValueSmall,
                         {color: selectedCustomer ? '#6366f1' : '#94a3b8'},
                       ]}>
                       {selectedCustomer ? selectedCustomer.name : 'Walk-in'}
-                    </Text>
+                    </Text> */}
                     <Text style={styles.summaryLabel}>Subtotal</Text>
                     <Text style={styles.summaryValueSmall}>
                       ₹{subtotal.toFixed(2)}
@@ -675,21 +674,44 @@ const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#f8fafc'},
   topActionBar: {
     flexDirection: 'row',
-    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'space-between', // Pushes items to left, center, and right
+    paddingHorizontal: 10,
     paddingVertical: 8,
-    gap: 10,
+    backgroundColor: '#fff',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 2, // Gives more room for buttons
+  },
+  dropdownContainer: {
+    flex: 1, // Keeps dropdown centered or consistently sized
+    marginHorizontal: 8,
   },
   browseButton: {
-    flex: 1,
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#2d2e2e',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
-  browseButtonText: {fontWeight: '600', color: '#475569'},
+  selectedButtonActive: {
+    borderColor: '#6366f1',
+    backgroundColor: '#f5f3ff',
+  },
+  clearCustomerBtn: {
+    marginLeft: -4,
+    padding: 4,
+  },
+  clearText: {
+    color: '#ef4444',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+
+  browseButtonText: {fontWeight: '700', color: '#475569', fontSize: 12},
   cameraToggleButton: {
     width: 50,
     height: 50,
@@ -769,15 +791,7 @@ const styles = StyleSheet.create({
     borderLeftColor: '#e2e8f0', // Small visual cue that this is a sub-section
     paddingLeft: 10,
   },
-  clearCustomerBtn: {
-    position: 'absolute',
-    right: 125, // Adjust based on your layout spacing
-    top: 18,
-    backgroundColor: '#fee2e2',
-    padding: 4,
-    borderRadius: 10,
-    zIndex: 10,
-  },
+
   summarySection: {marginBottom: 15},
   summaryRow: {
     flexDirection: 'row',

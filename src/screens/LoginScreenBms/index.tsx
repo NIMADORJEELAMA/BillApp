@@ -76,6 +76,7 @@ const LoginScreenBms = () => {
 
       const token = response?.access_token;
       const userData = response?.user;
+      console.log('userData', userData);
 
       if (token) {
         await saveToken(token);

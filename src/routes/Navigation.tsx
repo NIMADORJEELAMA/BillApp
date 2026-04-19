@@ -59,8 +59,7 @@ import AdminPettyCashScreen from '../screens/AdminPettyCashScreen';
 import AdminPerformanceReportScreen from '../screens/Report/PerformanceReport';
 import StaffScreen from '../screens/Staff';
 import PrinterSettings from '../screens/PrinterSettings';
-import CreateProductScreen from '../screens/ProductScreen';
-import ProductScreen from '../screens/ProductScreen';
+
 import ProductListScreen from '../screens/ProductScreen/ProductListScreen';
 import SalesScreen from '../screens/SalesScreen';
 import SalesListScreen from '../screens/SalesScreen/SalesListScreen';
@@ -69,6 +68,7 @@ import ModernHomeScreen from '../screens/ModernHomeScreen';
 import BulkProductScreen from '../screens/ProductScreen/BulkProductScreen';
 import BulkPrintScreen from '../screens/BulkPrintScreen';
 import ImagePrintScreen from '../components/Printer/ImagePrintScreen';
+import CustomerScreen from '../screens/Customer/CustomerScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -87,6 +87,7 @@ export type RootStackParamList = {
   SalesScreen: undefined;
   BulkProductScreen: undefined;
   BulkPrintScreen: undefined;
+  CustomerScreen: undefined;
   ImagePrintScreen: undefined;
 
   GenderSelect: undefined;
@@ -436,6 +437,7 @@ const Navigation = () => {
             component={BulkProductScreen}
           />
           <Stack.Screen name="BulkPrintScreen" component={BulkPrintScreen} />
+          <Stack.Screen name="CustomerScreen" component={CustomerScreen} />
           <Stack.Screen name="ImagePrintScreen" component={ImagePrintScreen} />
 
           {/* Settings and other inner screens should be here */}
