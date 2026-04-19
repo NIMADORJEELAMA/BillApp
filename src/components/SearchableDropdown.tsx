@@ -66,8 +66,6 @@ export default function SearchableDropdown({
               onChangeText={onChangeText}
               autoFocus={true}
             />
-            {/* Show loader inside the search bar if searching */}
-            {/* Show loader inside the search bar if searching */}
 
             {loading && (
               <ActivityIndicator
