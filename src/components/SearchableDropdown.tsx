@@ -67,6 +67,7 @@ export default function SearchableDropdown({
               autoFocus={true}
             />
             {/* Show loader inside the search bar if searching */}
+            {/* Show loader inside the search bar if searching */}
 
             {loading && (
               <ActivityIndicator
