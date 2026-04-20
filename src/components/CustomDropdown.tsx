@@ -26,7 +26,7 @@ const CustomDropdown = ({
 }: CustomDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Animation for arrow and list expansion
+  // Animation for arrow and list expansion asdfsad
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   const toggleDropdown = () => {
