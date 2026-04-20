@@ -24,6 +24,7 @@ import {
   updateQty,
   clearCart,
   updateItemDetails,
+  replaceCart,
 } from '../../redux/slices/cartSlice';
 import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
@@ -41,8 +42,97 @@ import CustomerModal from '../../components/Customer/CustomerModal';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
+  const [sessionMeta, setSessionMeta] = useState({
+    discountPercent: '0',
+    manualDiscount: '0',
+    gstPercentInput: '0',
+    selectedCustomer: null,
+  });
 
-  // Selectors
+  // --- MULTI-SESSION STATE ---
+  const [sessions, setSessions] = useState([
+    {
+      id: Date.now(),
+      name: 'Bill 1',
+      cart: [],
+      selectedCustomer: null,
+      discountPercent: '0',
+      manualDiscount: '0',
+      gstPercentInput: '0',
+    },
+  ]);
+  const [activeSessionId, setActiveSessionId] = useState(sessions[0].id);
+
+  // Get current active session
+  const activeSession =
+    sessions.find(s => s.id === activeSessionId) || sessions[0];
+  const addNewSession = useCallback(() => {
+    const newId = crypto.randomUUID(); // ✅ better than Date.now()
+
+    const newSession = {
+      id: newId,
+      name: `Bill ${sessions.length + 1}`,
+      cart: [],
+      selectedCustomer: null,
+      discountPercent: '0',
+      manualDiscount: '0',
+      gstPercentInput: '0',
+    };
+
+    setSessions(prev => [...prev, newSession]);
+    setActiveSessionId(newId);
+
+    dispatch(clearCart());
+  }, [sessions]);
+  const switchSession = useCallback(
+    sessionId => {
+      setSessions(prev => {
+        return prev.map(s =>
+          s.id === activeSessionId
+            ? {
+                ...s,
+                cart,
+                selectedCustomer,
+                discountPercent,
+                manualDiscount,
+                gstPercentInput,
+              }
+            : s,
+        );
+      });
+
+      const target = sessions.find(s => s.id === sessionId);
+      if (!target) return;
+
+      setActiveSessionId(sessionId);
+
+      // 🔥 CRITICAL FIX
+      dispatch(replaceCart(target.cart || []));
+
+      setSelectedCustomer(target.selectedCustomer);
+      setDiscountPercent(target.discountPercent);
+      setManualDiscount(target.manualDiscount);
+      setGstPercentInput(target.gstPercentInput);
+    },
+    [
+      sessions,
+      activeSessionId,
+      cart,
+      selectedCustomer,
+      discountPercent,
+      manualDiscount,
+      gstPercentInput,
+    ],
+  );
+
+  const closeSession = sessionId => {
+    if (sessions.length === 1) return; // Don't close the last one
+    const filtered = sessions.filter(s => s.id !== sessionId);
+    setSessions(filtered);
+    if (activeSessionId === sessionId) {
+      switchSession(filtered[0].id);
+    }
+  };
   const cart = useSelector((state: any) => state.cart.items || []);
   const discount = useSelector((state: any) => state.cart.discount || 0);
 
@@ -88,26 +178,31 @@ export default function SalesScreen() {
 
     {label: 'Credit', value: 'CREDIT'},
   ];
-  const handleCashChange = (val: string) => {
-    setSplitCash(val);
-    const cashAmount = parseFloat(val) || 0;
-    const remaining = Math.max(0, finalAmount - cashAmount);
-    setSplitOnline(remaining.toFixed(2));
-  };
+  const handleCashChange = useCallback(
+    (val: string) => {
+      const cashAmount = parseFloat(val) || 0;
+      const remaining = Math.max(0, finalAmount - cashAmount);
+
+      setSplitCash(val);
+      setSplitOnline(remaining.toFixed(2));
+    },
+    [finalAmount],
+  );
   // Update Calculations
   const subtotal = useMemo(() => {
-    return cart.reduce((total, item) => {
-      const itemTotal = item.price * item.quantity;
-      const discount = item.lineDiscount || 0;
-      return total + (itemTotal - discount);
-    }, 0);
+    let total = 0;
+    for (const item of cart) {
+      total += item.price * item.quantity - (item.lineDiscount || 0);
+    }
+    return total;
   }, [cart]);
   const itemLevelGst = useMemo(() => {
-    return cart.reduce((totalGst, item) => {
+    let gst = 0;
+    for (const item of cart) {
       const taxable = item.price * item.quantity - (item.lineDiscount || 0);
-      const rate = item.taxRate || 0;
-      return totalGst + (taxable * rate) / 100;
-    }, 0);
+      gst += (taxable * (item.taxRate || 0)) / 100;
+    }
+    return gst;
   }, [cart]);
 
   // Sync Discount Amount when Percent changes
@@ -259,6 +354,7 @@ export default function SalesScreen() {
       const response = await axiosInstance.post('/sales', payload);
 
       if (response.status === 201 || response.status === 200) {
+        const savedSale = response.data;
         if (shouldPrint) {
           const mac = await AsyncStorage.getItem('SAVED_PRINTER_MAC');
           if (!mac) {
@@ -268,12 +364,7 @@ export default function SalesScreen() {
               text2: 'No printer paired to print receipt.',
             });
           } else {
-            const result = await connectAndPrint(
-              cart,
-              subtotal,
-              discount,
-              finalAmount,
-            );
+            const result = await connectAndPrint(savedSale);
             if (!result.success) {
               Toast.show({
                 type: 'error',
@@ -320,8 +411,91 @@ export default function SalesScreen() {
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back');
 
+  const renderCartItem = useCallback(
+    ({item}) => {
+      return (
+        <View style={styles.cartItem}>
+          <TouchableOpacity
+            style={[
+              styles.tabItem,
+              item.id === activeSessionId && styles.activeTab,
+            ]}
+            onPress={() => switchSession(item.id)}>
+            <Text
+              style={[
+                styles.tabText,
+                item.id === activeSessionId && styles.activeTabText,
+              ]}>
+              {item.name}
+            </Text>
+            {sessions.length > 1 && (
+              <TouchableOpacity
+                onPress={() => closeSession(item.id)}
+                style={styles.closeTabIcon}>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    color: item.id === activeSessionId ? '#fff' : '#94a3b8',
+                  }}>
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        </View>
+      );
+    },
+    [dispatch],
+  );
+  const renderSessionTabs = useCallback(() => {
+    <View style={styles.tabScrollContainer}>
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={sessions}
+        keyExtractor={item => item.id.toString()}
+        renderItem={renderCartItem}
+        // renderItem={({item}) => (
+
+        //   <TouchableOpacity
+        //     style={[
+        //       styles.tabItem,
+        //       item.id === activeSessionId && styles.activeTab,
+        //     ]}
+        //     onPress={() => switchSession(item.id)}>
+        //     <Text
+        //       style={[
+        //         styles.tabText,
+        //         item.id === activeSessionId && styles.activeTabText,
+        //       ]}>
+        //       {item.name}
+        //     </Text>
+        //     {sessions.length > 1 && (
+        //       <TouchableOpacity
+        //         onPress={() => closeSession(item.id)}
+        //         style={styles.closeTabIcon}>
+        //         <Text
+        //           style={{
+        //             fontSize: 10,
+        //             color: item.id === activeSessionId ? '#fff' : '#94a3b8',
+        //           }}>
+        //           ✕
+        //         </Text>
+        //       </TouchableOpacity>
+        //     )}
+        //   </TouchableOpacity>
+        // )}
+        ListFooterComponent={
+          <TouchableOpacity style={styles.addTabBtn} onPress={addNewSession}>
+            <Text style={styles.addTabBtnText}>+</Text>
+          </TouchableOpacity>
+        }
+      />
+    </View>;
+  }, [sessions, activeSessionId]);
   return (
     <MainLayout title="POS Terminal" showBack>
+      {renderSessionTabs()}
       <KeyboardAvoidingView
         style={{flex: 1}}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -905,22 +1079,21 @@ const styles = StyleSheet.create({
   footerActionRow: {flexDirection: 'row', gap: 12},
   btnPrimary: {
     flex: 1.5,
-    height: 46,
+    height: 48,
     backgroundColor: '#111',
-    borderRadius: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   btnPrimaryText: {color: '#fff', fontWeight: '800'},
   btnSecondary: {
     flex: 1,
-    height: 46,
-    backgroundColor: '#f8fafc',
-    borderRadius: 16,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#848688',
   },
   btnSecondaryText: {color: '#000', fontWeight: '700'},
   btnDisabled: {opacity: 0.5},
@@ -952,4 +1125,55 @@ const styles = StyleSheet.create({
   },
   modalButtons: {flexDirection: 'row', gap: 10},
   modalBtn: {flex: 1, padding: 12, borderRadius: 8, alignItems: 'center'},
+  tabScrollContainer: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    paddingVertical: 8,
+  },
+  tabItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginHorizontal: 4,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  activeTab: {
+    backgroundColor: '#111',
+    borderColor: '#111',
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+  closeTabIcon: {
+    marginLeft: 8,
+    padding: 2,
+  },
+  addTabBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
+  },
+  addTabBtnText: {
+    fontSize: 20,
+    color: '#64748b',
+    marginTop: -2,
+  },
 });
