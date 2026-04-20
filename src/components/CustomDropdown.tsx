@@ -26,7 +26,6 @@ const CustomDropdown = ({
 }: CustomDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Animation for ar
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   const toggleDropdown = () => {
