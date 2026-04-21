@@ -18,7 +18,7 @@ interface MainLayoutProps {
   subtitle?: string | React.ReactNode;
   showBack?: boolean;
   leftComponent?: React.ReactNode;
-  rightComponent?: React.ReactNode; // For Cart, Profile, <etc styleName={}></etc>
+  rightComponent?: React.ReactNode; // For Cart, Profile, <etc
   statusBarColor?: string;
   barStyle?: 'dark-content' | 'light-content';
 }
