@@ -17,7 +17,7 @@ interface MainLayoutProps {
   title: string;
   subtitle?: string | React.ReactNode;
   showBack?: boolean;
-  leftComponent?: React.ReactNode; // For Drawer or custom back
+  leftComponent?: React.ReactNode; // For Drawer or custom back asdf
   rightComponent?: React.ReactNode; // For Cart, Profile, <etc styleName={}></etc>
   statusBarColor?: string;
   barStyle?: 'dark-content' | 'light-content';
