@@ -8,26 +8,15 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-import ButtonPreferences from '../../components/ButtonPreferences';
+
 import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from '../../routes/Navigation';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import ArrowRight from '../../assets/Icons/right-arrrow.svg';
-import Help from '../../assets/Icons/help.svg';
-import Filter from '../../assets/Icons/filter-svgrepo-com.svg';
-
-import Setting from '../../assets/Icons/settings.svg';
-
-import Star from '../../assets/Icons/star-svgrepo-com.svg';
-import Incognito from '../../assets/Icons/incognito-svgrepo-com.svg';
-
-import Plane from '../../assets/Icons/plane-svgrepo-com.svg';
+import {useAnimatedRef, scrollTo} from 'react-native-reanimated';
 import SalesChart from '../../components/Charts/SalesChart';
 import CustomTileButton from '../../components/CustomTileButton';
 
 const {width} = Dimensions.get('window');
-
-/* CONFIG */
 
 const COLLAPSIBLE_HEIGHT = 200;
 const FIXED_HEADER_HEIGHT = 80;
@@ -68,17 +57,50 @@ const DASHBOARD_MENU = [
     screen: 'CustomerScreen',
     color: '#FAF5FF',
   },
+  {
+    id: '5',
+    title: 'Sales Report',
+    subtitle: 'Client list',
+    image: require('../../../src/assets/Images_main/google.png'),
+    screen: 'SalesReportScreen',
+    color: '#FAF5FF',
+  },
 ];
 const ModernHomeScreen = () => {
   const scrollY = useSharedValue(0);
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const scrollHandler = useAnimatedScrollHandler(event => {
-    scrollY.value = event.contentOffset.y;
+  const SNAP_POINT = COLLAPSIBLE_HEIGHT / 2;
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: event => {
+      scrollY.value = event.contentOffset.y;
+    },
+
+    onEndDrag: event => {
+      const y = event.contentOffset.y;
+
+      if (y > 0 && y < COLLAPSIBLE_HEIGHT) {
+        if (y < SNAP_POINT) {
+          // 🔽 SNAP BACK (expand)
+          scrollTo(scrollRef, 0, 0, true);
+        } else {
+          // 🔼 SNAP UP (collapse)
+          scrollTo(scrollRef, 0, COLLAPSIBLE_HEIGHT, true);
+        }
+      }
+    },
   });
 
   /* 🔥 COLLAPSE ANIMATION */
   const collapsibleStyle = useAnimatedStyle(() => {
+    const scale = interpolate(
+      scrollY.value,
+      [0, COLLAPSIBLE_HEIGHT],
+      [1, 0.95],
+      Extrapolate.CLAMP,
+    );
     const height = interpolate(
       scrollY.value,
       [0, COLLAPSIBLE_HEIGHT],
@@ -94,6 +116,7 @@ const ModernHomeScreen = () => {
     );
 
     return {
+      scale,
       height,
       opacity,
     };
@@ -114,6 +137,7 @@ const ModernHomeScreen = () => {
 
       {/* 🟢 SECTION 3: SCROLL (TOP LAYER - SAME LEVEL AS HEADER) */}
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
