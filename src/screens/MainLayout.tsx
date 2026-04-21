@@ -10,7 +10,7 @@ import {
 import {Text} from './../components/common/UI';
 import {useIsFocused, useNavigation} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import BackIcon from '../assets/Icons/left-arrow.svg'; // Adjust pathasdg
+import BackIcon from '../assets/Icons/left-arrow.svg';
 
 interface MainLayoutProps {
   children: React.ReactNode;
