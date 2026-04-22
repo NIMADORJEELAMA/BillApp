@@ -100,8 +100,8 @@ const styles = StyleSheet.create({
     height: 30,
   },
   imageWrapperGrid: {
-    width: 35,
-    height: 35,
+    width: 52,
+    height: 52,
     alignSelf: 'flex-end', // Pushes image to bottom-right in grid
     bottom: 20,
   },

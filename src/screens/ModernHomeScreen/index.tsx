@@ -1,5 +1,12 @@
-import React from 'react';
-import {StyleSheet, View, Dimensions, Platform, TextInput} from 'react-native';
+import React, {useState} from 'react';
+import {
+  StyleSheet,
+  View,
+  Dimensions,
+  Platform,
+  TextInput,
+  Text,
+} from 'react-native';
 
 import Animated, {
   useSharedValue,
@@ -15,6 +22,9 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useAnimatedRef, scrollTo} from 'react-native-reanimated';
 import SalesChart from '../../components/Charts/SalesChart';
 import CustomTileButton from '../../components/CustomTileButton';
+import TinySquareButton from '../../components/Buttons/TinySquareButton';
+import SettingsIcon from '../../assets/Icons/settings.svg';
+import SalesReportScreen from '../SalesReportScreen';
 
 const {width} = Dimensions.get('window');
 
@@ -37,7 +47,7 @@ const DASHBOARD_MENU = [
     id: '2',
     title: 'Bulk Print',
     subtitle: 'Print multiple labels',
-    image: require('../../../src/assets/Images_main/google.png'),
+    image: require('../../../src/assets/Images_main/ThermalPrinter.jpg'),
     screen: 'BulkPrintScreen',
     color: '#FFF7ED',
   },
@@ -57,14 +67,14 @@ const DASHBOARD_MENU = [
     screen: 'CustomerScreen',
     color: '#FAF5FF',
   },
-  {
-    id: '5',
-    title: 'Sales Report',
-    subtitle: 'Client list',
-    image: require('../../../src/assets/Images_main/google.png'),
-    screen: 'SalesReportScreen',
-    color: '#FAF5FF',
-  },
+  // {
+  //   id: '5',
+  //   title: 'Sales Report',
+  //   subtitle: 'Client list',
+  //   image: require('../../../src/assets/Images_main/google.png'),
+  //   screen: 'SalesReportScreen',
+  //   color: '#FAF5FF',
+  // },
 ];
 const ModernHomeScreen = () => {
   const scrollY = useSharedValue(0);
@@ -124,7 +134,6 @@ const ModernHomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* 🔵 SECTION 1: HEADER (TOP LAYER) */}
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <TextInput placeholder="Search..." placeholderTextColor="#999" />
@@ -160,9 +169,30 @@ const ModernHomeScreen = () => {
             />
           ))}
         </View>
-        <View style={styles.fakeCard} />
-        <View style={styles.fakeCard} />
-        <View style={styles.fakeCard} />
+
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.tinyBtnGrid}>
+          <TinySquareButton
+            title="Sales Report"
+            onPress={() => navigation.navigate('SalesReportScreen')}
+            icon={<SettingsIcon width={20} height={20} fill="#6366F1" />}
+          />
+          <TinySquareButton
+            title="Reports"
+            onPress={() => {}}
+            icon={<SettingsIcon width={20} height={20} fill="#F59E0B" />}
+          />
+          <TinySquareButton
+            title="Profile"
+            onPress={() => {}}
+            icon={<SettingsIcon width={20} height={20} fill="#10B981" />}
+          />
+          <TinySquareButton
+            title="Help"
+            onPress={() => {}}
+            icon={<SettingsIcon width={20} height={20} fill="#EF4444" />}
+          />
+        </View>
         <View style={styles.fakeCard} />
       </Animated.ScrollView>
     </View>
@@ -198,8 +228,10 @@ const styles = StyleSheet.create({
   searchBar: {
     height: 45,
     marginTop: 20,
-    backgroundColor: 'blue',
+    // backgroundColor: 'blue',
     borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E0E7FF',
     paddingHorizontal: 15,
     justifyContent: 'center',
   },
@@ -214,12 +246,11 @@ const styles = StyleSheet.create({
     zIndex: 1010, // 👈 BELOW EVERYTHING
     paddingHorizontal: 20,
     overflow: 'hidden',
-    backgroundColor: 'red',
   },
 
   balanceCard: {
     height: 100,
-    backgroundColor: 'red',
+
     borderRadius: 16,
   },
 
@@ -253,9 +284,22 @@ const styles = StyleSheet.create({
   fakeCard: {
     height: 200,
     width: width - 40,
-    backgroundColor: 'green',
+    backgroundColor: '#757171',
     alignSelf: 'center',
     borderRadius: 20,
     marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginLeft: 20,
+    marginBottom: 15,
+  },
+  tinyBtnGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
   },
 });
