@@ -115,7 +115,6 @@ const SalesReportScreen = () => {
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}>
-        {/* KPI Section */}
         <View style={styles.kpiRow}>
           <View style={[styles.kpiCard, {borderLeftColor: '#fa2c37'}]}>
             <Text style={styles.kpiLabel}>Revenue</Text>
