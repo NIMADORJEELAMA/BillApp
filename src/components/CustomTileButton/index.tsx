@@ -17,7 +17,7 @@ interface CustomTileButtonProps {
   onPress: () => void;
   containerStyle?: StyleProp<ViewStyle>;
   backgroundColor?: string;
-  isGrid?: boolean; // New prop to toggle layout
+  isGrid?: boolean;
 }
 
 const CustomTileButton = ({
