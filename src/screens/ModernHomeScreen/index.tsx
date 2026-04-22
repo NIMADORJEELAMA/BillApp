@@ -39,7 +39,7 @@ const DASHBOARD_MENU = [
     id: '1',
     title: 'Create Sales',
     subtitle: 'Transactions',
-    image: require('../../../src/assets/Images_main/google.png'),
+    image: require('../../../src/assets/Icons/billreceipt.png'),
     screen: 'SalesScreen',
     color: '#EEF2FF',
   },
@@ -47,25 +47,25 @@ const DASHBOARD_MENU = [
     id: '2',
     title: 'Bulk Print',
     subtitle: 'Print multiple labels',
-    image: require('../../../src/assets/Images_main/ThermalPrinter.jpg'),
+    image: require('../../assets/Icons/printerthermal.png'),
     screen: 'BulkPrintScreen',
-    color: '#FFF7ED',
+    color: '#EEF2FF',
   },
   {
     id: '3',
     title: 'Bulk Upload',
-    subtitle: 'Add multiple products',
-    image: require('../../../src/assets/Images_main/google.png'),
+    subtitle: 'Add multiple items',
+    image: require('../../../src/assets/Icons/upload.webp'),
     screen: 'BulkProductScreen',
-    color: '#F0FDF4',
+    color: '#EEF2FF',
   },
   {
     id: '4',
-    title: 'Customers',
-    subtitle: 'Client list',
-    image: require('../../../src/assets/Images_main/google.png'),
-    screen: 'CustomerScreen',
-    color: '#FAF5FF',
+    title: 'Sales Report',
+    subtitle: 'View sales report',
+    image: require('../../../src/assets/Icons/sales-report.webp'),
+    screen: 'SalesReportScreen',
+    color: '#EEF2FF',
   },
   // {
   //   id: '5',
@@ -173,8 +173,8 @@ const ModernHomeScreen = () => {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.tinyBtnGrid}>
           <TinySquareButton
-            title="Sales Report"
-            onPress={() => navigation.navigate('SalesReportScreen')}
+            title="Customers"
+            onPress={() => navigation.navigate('CustomerScreen')}
             icon={<SettingsIcon width={20} height={20} fill="#6366F1" />}
           />
           <TinySquareButton
@@ -193,6 +193,7 @@ const ModernHomeScreen = () => {
             icon={<SettingsIcon width={20} height={20} fill="#EF4444" />}
           />
         </View>
+        <View style={styles.fakeCard} />
         <View style={styles.fakeCard} />
       </Animated.ScrollView>
     </View>
