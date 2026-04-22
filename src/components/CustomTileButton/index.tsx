@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   imageWrapperGrid: {
     width: 52,
     height: 52,
-    alignSelf: 'flex-end', // Pushes
+    alignSelf: 'flex-end',
     bottom: 20,
   },
   image: {
