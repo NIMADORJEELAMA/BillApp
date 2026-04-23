@@ -172,7 +172,7 @@ export default function SalesListScreen() {
     }
   }, [selectedSale]);
 
-  // 4. Optimized Stats Calculation
+  // 4. Optimized Stats Calculationdfg
   const stats = useMemo(() => {
     return sales.reduce(
       (acc, curr) => {
