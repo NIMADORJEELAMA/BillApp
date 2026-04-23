@@ -171,7 +171,7 @@ export default function SalesListScreen() {
       Toast.show({type: 'error', text1: 'Print failed. Check connection.'});
     }
   }, [selectedSale]);
-
+  ///asfd
   const stats = useMemo(() => {
     return sales.reduce(
       (acc, curr) => {
