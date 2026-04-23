@@ -183,7 +183,7 @@ export default function SalesListScreen() {
     );
   }, [sales]);
 
-  // 5. Separate Render Item
+  // 5. Separate Render Item asef
   const SaleItem = React.memo(({item, onPress}: any) => {
     const isCash = item.paymentMode === 'CASH';
     const date = new Date(item.createdAt);
