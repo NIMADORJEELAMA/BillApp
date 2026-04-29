@@ -40,7 +40,7 @@ const AnimatedTabButton = (props: any) => {
           top: -8,
           height: 10,
           borderRadius: 50,
-          backgroundColor: '#7d52df',
+          backgroundColor: '#2f33f7',
           width: borderWidth.interpolate({
             inputRange: [0, 100],
             outputRange: ['0%', '100%'],
@@ -51,7 +51,7 @@ const AnimatedTabButton = (props: any) => {
         {props.icon}
         <Text
           style={{
-            color: isSelected ? '#7d52df' : 'gray',
+            color: isSelected ? '#2f33f7' : 'gray',
             fontSize: 12,
             fontWeight: isSelected ? 'bold' : 'normal',
           }}>

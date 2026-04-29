@@ -29,7 +29,7 @@ import TimelineChart from '../../components/Charts/TimelineChart';
 
 const {width} = Dimensions.get('window');
 
-const COLLAPSIBLE_HEIGHT = 200;
+const COLLAPSIBLE_HEIGHT = 220;
 const FIXED_HEADER_HEIGHT = 80;
 const STATUSBAR = Platform.OS === 'ios' ? 50 : 20;
 const GRID_SPACING = 8;

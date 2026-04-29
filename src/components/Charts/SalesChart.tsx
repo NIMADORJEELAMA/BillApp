@@ -5,13 +5,13 @@ import {
   Dimensions,
   Text,
   ActivityIndicator,
-  TouchableOpacity, // Added
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import axiosInstance from '../../services/axiosInstance';
 import {useSelector} from 'react-redux';
 
 const {width} = Dimensions.get('window');
-const CHART_HEIGHT = 100;
 const PADDING = 20;
 const CONTAINER_WIDTH = width - PADDING * 2;
 
@@ -26,15 +26,13 @@ const getDateRange = (type: string) => {
     endDate: end.toISOString().split('T')[0],
   };
 };
-
 const SalesChart = () => {
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // Local state for manual refresh
+  const [refreshing, setRefreshing] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
   const [filter, setFilter] = useState('Month');
   const user = useSelector((state: any) => state.auth.user);
 
-  // Wrapped in useCallback for efficiency
   const fetchReportData = useCallback(
     async (isManual = false) => {
       try {
@@ -42,22 +40,11 @@ const SalesChart = () => {
         else setLoading(true);
 
         const {startDate, endDate} = getDateRange(filter);
-
         const response = await axiosInstance.get('/sales/report', {
-          params: {
-            orgId: user?.orgId,
-            start: startDate,
-            end: endDate,
-          },
+          params: {orgId: user?.orgId, start: startDate, end: endDate},
         });
 
-        const data = response.data;
-        console.log('data', data);
-        setReportData({
-          summary: data.summary || {totalRevenue: 0, totalSalesCount: 0},
-          topProducts: data.topProducts || [],
-          paymentBreakdown: data.paymentBreakdown || [],
-        });
+        setReportData(response.data);
       } catch (error) {
         console.error('Fetch Error:', error);
       } finally {
@@ -69,212 +56,170 @@ const SalesChart = () => {
   );
 
   useEffect(() => {
-    if (user?.orgId) {
-      fetchReportData();
-    }
+    if (user?.orgId) fetchReportData();
   }, [fetchReportData]);
 
   if (loading) {
     return (
-      <View style={[styles.chartContainer, styles.loader]}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#6366F1" />
       </View>
     );
   }
 
-  const products = reportData?.topProducts || [];
-  const summary = reportData?.summary || {totalRevenue: 0};
-  const maxQuantity =
-    products.length > 0
-      ? Math.max(...products.map((p: any) => p._sum?.quantity || 0), 1)
-      : 1;
+  const {summary, topProducts, paymentBreakdown} = reportData || {};
+  const maxQty = Math.max(
+    ...(topProducts?.map((p: any) => p._sum?.quantity) || [1]),
+  );
 
   return (
-    <View style={styles.chartContainer}>
-      <View style={styles.chartHeader}>
-        <View style={{flex: 1}}>
-          <View style={styles.titleRow}>
-            <Text style={styles.chartTitle}>Top 5 Products</Text>
-            {/* Refresh Button */}
-            <TouchableOpacity
-              onPress={() => fetchReportData(true)}
-              disabled={refreshing}
-              style={styles.refreshButton}>
-              {refreshing ? (
-                <ActivityIndicator size="small" color="#4F46E5" />
-              ) : (
-                <Text style={styles.refreshText}>Refresh</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.chartSubtitle}>Based on quantity sold</Text>
+    <View style={styles.container}>
+      {/* Header Section */}
+      {/* <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Revenue Overview</Text>
+          <Text style={styles.subtitle}>
+            Performance for this {filter.toLowerCase()}
+          </Text>
         </View>
-        <Text style={styles.totalSales}>
-          ${summary.totalRevenue?.toLocaleString()}
-        </Text>
+        <TouchableOpacity
+          onPress={() => fetchReportData(true)}
+          style={styles.refreshBadge}>
+          {refreshing ? (
+            <ActivityIndicator size="small" color="#6366F1" />
+          ) : (
+            <Text style={styles.refreshText}>Refresh</Text>
+          )}
+        </TouchableOpacity>
+      </View> */}
+
+      {/* Summary Cards */}
+      {/* <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.summaryScroll}>
+        <SummaryCard
+          label="Total Revenue"
+          value={`$${summary?.totalRevenue?.toLocaleString()}`}
+          color="#6366F1"
+        />
+        <SummaryCard
+          label="Avg. Order"
+          value={`$${summary?.averageOrderValue?.toFixed(2)}`}
+          color="#10B981"
+        />
+        <SummaryCard
+          label="Total Sales"
+          value={summary?.totalSalesCount}
+          color="#F59E0B"
+        />
+      </ScrollView> */}
+
+      {/* Top Products Horizontal Bars */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Top Products</Text>
+        <TouchableOpacity
+          onPress={() => fetchReportData(true)}
+          style={styles.refreshBadge}>
+          {refreshing ? (
+            <ActivityIndicator size="small" color="#6366F1" />
+          ) : (
+            <Text style={styles.refreshText}>Refresh</Text>
+          )}
+        </TouchableOpacity>
+        {topProducts?.map((item: any, index: number) => (
+          <View key={index} style={styles.productRow}>
+            <View style={styles.productInfo}>
+              <Text style={styles.productName} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={styles.productQty}>{item._sum?.quantity} sold</Text>
+            </View>
+            <View style={styles.barBackground}>
+              <View
+                style={[
+                  styles.barFill,
+                  {
+                    width: `${(item._sum?.quantity / maxQty) * 100}%`,
+                    backgroundColor: index === 0 ? '#6366F1' : '#C7D2FE',
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        ))}
       </View>
-
-      {products.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.axisLabel}>No sales data available</Text>
-        </View>
-      ) : (
-        <View style={styles.chartArea}>
-          <View style={styles.yAxis}>
-            <Text style={styles.axisLabel}>{Math.round(maxQuantity)}</Text>
-            <Text style={styles.axisLabel}>{Math.round(maxQuantity / 2)}</Text>
-            <Text style={styles.axisLabel}>0</Text>
-          </View>
-
-          <View style={styles.barChart}>
-            {products.map((item: any, index: number) => {
-              const qty = item._sum?.quantity || 0;
-              const barHeight = (qty / maxQuantity) * (CHART_HEIGHT - 40);
-
-              return (
-                <View key={index} style={styles.barColumn}>
-                  <View
-                    style={[
-                      styles.bar,
-                      {
-                        height: Math.max(barHeight, 10),
-                        backgroundColor: index === 0 ? '#4F46E5' : '#E0E7FF',
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.barValue,
-                        index !== 0 && {color: '#4F46E5'},
-                      ]}>
-                      {qty}
-                    </Text>
-                  </View>
-                  <Text numberOfLines={1} style={styles.xAxisLabel}>
-                    {item.name || 'N/A'}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      )}
     </View>
   );
 };
 
+const SummaryCard = ({label, value, color}: any) => (
+  <View style={[styles.card, {borderLeftColor: color}]}>
+    <Text style={styles.cardLabel}>{label}</Text>
+    <Text style={[styles.cardValue, {color}]}>{value}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  // ... your existing styles ...
-  chartContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: PADDING,
-    width: CONTAINER_WIDTH,
-    alignSelf: 'center',
-    marginVertical: 10,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    minHeight: 220,
-  },
-  loader: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chartHeader: {
+  container: {padding: 16, backgroundColor: '#F9FAFB'},
+  loaderContainer: {height: 200, justifyContent: 'center'},
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 20,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  title: {fontSize: 20, fontWeight: '800', color: '#111827'},
+  subtitle: {fontSize: 13, color: '#6B7280'},
+  refreshBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 20,
   },
-  chartTitle: {
+  refreshText: {color: '#6366F1', fontWeight: '600', fontSize: 12},
+  summaryScroll: {marginBottom: 24},
+  card: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginRight: 12,
+    width: 140,
+    borderLeftWidth: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  cardLabel: {fontSize: 12, color: '#6B7280', marginBottom: 4},
+  cardValue: {fontSize: 16, fontWeight: 'bold'},
+  section: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    elevation: 2,
+  },
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    marginBottom: 16,
+    color: '#374151',
   },
-  refreshButton: {
-    marginLeft: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: '#F3F4F6',
-  },
-  refreshText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#4F46E5',
-  },
-  chartSubtitle: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  totalSales: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#4F46E5',
-  },
-  chartArea: {
+  productRow: {marginBottom: 14},
+  productInfo: {
     flexDirection: 'row',
-    height: CHART_HEIGHT,
-    marginTop: 10,
-  },
-  emptyContainer: {
-    height: CHART_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  yAxis: {
     justifyContent: 'space-between',
-    paddingBottom: 20,
-    marginRight: 8,
-    width: 30,
+    marginBottom: 6,
   },
-  axisLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    textAlign: 'right',
+  productName: {fontSize: 14, fontWeight: '600', color: '#1F2937', flex: 1},
+  productQty: {fontSize: 12, color: '#6B7280'},
+  barBackground: {
+    height: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+    overflow: 'hidden',
   },
-  barChart: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    borderLeftWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingBottom: 2,
-  },
-  barColumn: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  bar: {
-    width: '80%',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    justifyContent: 'center',
-  },
-  barValue: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 2,
-  },
-  xAxisLabel: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginTop: 6,
-    textAlign: 'center',
-  },
+  barFill: {height: '100%', borderRadius: 4},
 });
 
 export default SalesChart;
