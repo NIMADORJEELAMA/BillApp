@@ -25,6 +25,7 @@ import CustomTileButton from '../../components/CustomTileButton';
 import TinySquareButton from '../../components/Buttons/TinySquareButton';
 import SettingsIcon from '../../assets/Icons/settings.svg';
 import SalesReportScreen from '../SalesReportScreen';
+import TimelineChart from '../../components/Charts/TimelineChart';
 
 const {width} = Dimensions.get('window');
 
@@ -141,7 +142,7 @@ const ModernHomeScreen = () => {
       </View>
       {/* 🔴 SECTION 2: COLLAPSIBLE (BOTTOM LAYER) */}
       <Animated.View style={[styles.collapsible, collapsibleStyle]}>
-        <SalesChart />
+        <TimelineChart />
       </Animated.View>
 
       {/* 🟢 SECTION 3: SCROLL (TOP LAYER - SAME LEVEL AS HEADER) */}
@@ -193,6 +194,7 @@ const ModernHomeScreen = () => {
             icon={<SettingsIcon width={20} height={20} fill="#EF4444" />}
           />
         </View>
+        <SalesChart />
         <View style={styles.fakeCard} />
         <View style={styles.fakeCard} />
       </Animated.ScrollView>

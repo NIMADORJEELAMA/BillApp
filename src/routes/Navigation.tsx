@@ -185,8 +185,8 @@ const TabNavigator: React.FC = () => {
                     <HomeIcon
                       height={20}
                       width={20}
-                      fill={isSelected ? '#000000' : 'gray'}
-                      stroke={isSelected ? '#000000' : 'gray'}
+                      fill={isSelected ? '#7d52df' : 'gray'}
+                      stroke={isSelected ? '#7d52df' : 'gray'}
                       strokeWidth="1.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -216,8 +216,8 @@ const TabNavigator: React.FC = () => {
                     <HomeIcon
                       height={20}
                       width={20}
-                      fill={isSelected ? '#000000' : 'gray'}
-                      stroke={isSelected ? '#000000' : 'gray'}
+                      fill={isSelected ? '#7d52df' : 'gray'}
+                      stroke={isSelected ? '#7d52df' : 'gray'}
                       strokeWidth="1.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -247,8 +247,8 @@ const TabNavigator: React.FC = () => {
                     <KitchenIcon
                       height={22}
                       width={22}
-                      fill={isSelected ? '#000000' : 'gray'}
-                      stroke={isSelected ? '#000000' : 'gray'}
+                      fill={isSelected ? '#7d52df' : 'gray'}
+                      stroke={isSelected ? '#7d52df' : 'gray'}
                       strokeWidth="1.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -278,8 +278,8 @@ const TabNavigator: React.FC = () => {
                     <PrinterIcon
                       height={22}
                       width={22}
-                      fill={isSelected ? '#000000' : 'gray'}
-                      stroke={isSelected ? '#000000' : 'gray'}
+                      fill={isSelected ? '#7d52df' : 'gray'}
+                      stroke={isSelected ? '#7d52df' : 'gray'}
                       strokeWidth="1.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -343,8 +343,8 @@ const TabNavigator: React.FC = () => {
                     <FoodReportIcon
                       height={22}
                       width={22}
-                      fill={isSelected ? '#000000' : 'gray'}
-                      stroke={isSelected ? '#000000' : 'gray'}
+                      fill={isSelected ? '#7d52df' : 'gray'}
+                      stroke={isSelected ? '#7d52df' : 'gray'}
                       // strokeWidth="1.5"
                       // strokeLinecap="round"
                       // strokeLinejoin="round"
@@ -375,7 +375,7 @@ const TabNavigator: React.FC = () => {
                     <SettingIcon
                       height={22}
                       width={22}
-                      color={isSelected ? '#000000' : 'gray'}
+                      color={isSelected ? '#7d52df' : 'gray'}
                     />
                   }
                 />

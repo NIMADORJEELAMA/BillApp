@@ -5,12 +5,13 @@ import {
   Dimensions,
   Text,
   ActivityIndicator,
+  TouchableOpacity, // Added
 } from 'react-native';
 import axiosInstance from '../../services/axiosInstance';
 import {useSelector} from 'react-redux';
 
 const {width} = Dimensions.get('window');
-const CHART_HEIGHT = 100; // Increased for better visibility
+const CHART_HEIGHT = 100;
 const PADDING = 20;
 const CONTAINER_WIDTH = width - PADDING * 2;
 
@@ -28,57 +29,61 @@ const getDateRange = (type: string) => {
 
 const SalesChart = () => {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // Local state for manual refresh
   const [reportData, setReportData] = useState<any>(null);
   const [filter, setFilter] = useState('Month');
   const user = useSelector((state: any) => state.auth.user);
 
-  const fetchReportData = async () => {
-    try {
-      setLoading(true);
-      const {startDate, endDate} = getDateRange(filter);
+  // Wrapped in useCallback for efficiency
+  const fetchReportData = useCallback(
+    async (isManual = false) => {
+      try {
+        if (isManual) setRefreshing(true);
+        else setLoading(true);
 
-      const response = await axiosInstance.get('/sales/report', {
-        params: {
-          orgId: user?.orgId,
-          start: startDate,
-          end: endDate,
-        },
-      });
+        const {startDate, endDate} = getDateRange(filter);
 
-      const data = response.data;
-      console.log('data', data);
+        const response = await axiosInstance.get('/sales/report', {
+          params: {
+            orgId: user?.orgId,
+            start: startDate,
+            end: endDate,
+          },
+        });
 
-      // Extract and format data for the chart
-      setReportData({
-        summary: data.summary || {totalRevenue: 0, totalSalesCount: 0},
-        topProducts: data.topProducts || [],
-        paymentBreakdown: data.paymentBreakdown || [],
-      });
-    } catch (error) {
-      console.error('Fetch Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const data = response.data;
+        console.log('data', data);
+        setReportData({
+          summary: data.summary || {totalRevenue: 0, totalSalesCount: 0},
+          topProducts: data.topProducts || [],
+          paymentBreakdown: data.paymentBreakdown || [],
+        });
+      } catch (error) {
+        console.error('Fetch Error:', error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [filter, user?.orgId],
+  );
 
   useEffect(() => {
     if (user?.orgId) {
       fetchReportData();
     }
-  }, [filter, user?.orgId]);
+  }, [fetchReportData]);
 
   if (loading) {
     return (
       <View style={[styles.chartContainer, styles.loader]}>
-        <ActivityIndicator size="large" color="#fa2c37" />
+        <ActivityIndicator size="large" color="#4F46E5" />
       </View>
     );
   }
 
   const products = reportData?.topProducts || [];
   const summary = reportData?.summary || {totalRevenue: 0};
-
-  // Calculate maxQuantity safely
   const maxQuantity =
     products.length > 0
       ? Math.max(...products.map((p: any) => p._sum?.quantity || 0), 1)
@@ -87,8 +92,21 @@ const SalesChart = () => {
   return (
     <View style={styles.chartContainer}>
       <View style={styles.chartHeader}>
-        <View>
-          <Text style={styles.chartTitle}>Top 5 Products</Text>
+        <View style={{flex: 1}}>
+          <View style={styles.titleRow}>
+            <Text style={styles.chartTitle}>Top 5 Products</Text>
+            {/* Refresh Button */}
+            <TouchableOpacity
+              onPress={() => fetchReportData(true)}
+              disabled={refreshing}
+              style={styles.refreshButton}>
+              {refreshing ? (
+                <ActivityIndicator size="small" color="#4F46E5" />
+              ) : (
+                <Text style={styles.refreshText}>Refresh</Text>
+              )}
+            </TouchableOpacity>
+          </View>
           <Text style={styles.chartSubtitle}>Based on quantity sold</Text>
         </View>
         <Text style={styles.totalSales}>
@@ -102,7 +120,6 @@ const SalesChart = () => {
         </View>
       ) : (
         <View style={styles.chartArea}>
-          {/* Y-Axis Labels */}
           <View style={styles.yAxis}>
             <Text style={styles.axisLabel}>{Math.round(maxQuantity)}</Text>
             <Text style={styles.axisLabel}>{Math.round(maxQuantity / 2)}</Text>
@@ -146,6 +163,7 @@ const SalesChart = () => {
 };
 
 const styles = StyleSheet.create({
+  // ... your existing styles ...
   chartContainer: {
     backgroundColor: '#fff',
     borderRadius: 20,
@@ -167,17 +185,34 @@ const styles = StyleSheet.create({
   chartHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 20,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   chartTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1F2937',
   },
+  refreshButton: {
+    marginLeft: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#F3F4F6',
+  },
+  refreshText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
   chartSubtitle: {
     fontSize: 11,
     color: '#6B7280',
+    marginTop: 2,
   },
   totalSales: {
     fontSize: 20,
