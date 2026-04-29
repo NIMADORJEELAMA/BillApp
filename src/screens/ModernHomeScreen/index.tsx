@@ -77,6 +77,7 @@ const DASHBOARD_MENU = [
   //   color: '#FAF5FF',
   // },
 ];
+//asdf
 const ModernHomeScreen = () => {
   const scrollY = useSharedValue(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
