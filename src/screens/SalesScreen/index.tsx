@@ -404,7 +404,7 @@ export default function SalesScreen() {
               </TouchableOpacity> */}
             </View>
 
-            {/* Camera Preview Section aasdfdgasdfgfd*/}
+            {/* Camera Preview Section aasdfdgasdadfgfgfd*/}
             {isCameraVisible && (
               <View style={styles.cameraContainer}>
                 {device && hasPermission ? (
