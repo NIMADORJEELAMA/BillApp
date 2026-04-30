@@ -8,6 +8,7 @@ const color = {
   purple: '#c2bff6',
   // dark: '#1E293B',
   dark: '#000',
+  themeBlue: '#2f33f7',
 };
 
 export default color;

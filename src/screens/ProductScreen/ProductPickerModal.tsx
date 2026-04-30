@@ -18,6 +18,8 @@ import axiosInstance from '../../services/axiosInstance';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ProductFormModal from './ProductFormModal';
 import SearchBar from '../../components/Searchbar';
+import RightIcon from '../../assets/Icons/right-arrow.svg';
+import color from '../../assets/Color/color';
 
 const {width} = Dimensions.get('window');
 const ITEM_WIDTH = (width - 48) / 3;
@@ -154,14 +156,23 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
             <Text style={styles.closeIcon}>✕</Text>
           </TouchableOpacity>
         </View>
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search..."
-        />
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Text>+</Text>
-        </TouchableOpacity>
+        <View style={styles.headerContainer}>
+          <View style={styles.searchWrapper}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search..."
+              containerStyle={styles.searchBarContainer}
+              inputContainerStyle={styles.searchBarInput}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setModalVisible(true)}>
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
 
         {loading ? (
           <View style={styles.loaderContainer}>
@@ -200,8 +211,17 @@ export default function ProductPickerModal({isVisible, onClose}: any) {
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{cartCount}</Text>
               </View>
+              <View style={{marginLeft: 12}}>
+                <RightIcon
+                  width={12}
+                  height={12}
+                  fill={color.lightGrey}
+                  stroke={color.lightGrey}
+                  strokeWidth={30} // Increase this for bolder lines
+                />
+              </View>
 
-              <Text style={styles.footerArrow}>→</Text>
+              <Text style={styles.footerArrow}></Text>
             </TouchableOpacity>
           </View>
         )}
@@ -237,16 +257,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeIcon: {fontSize: 14, fontWeight: 'bold', color: '#64748b'},
-
-  searchSection: {paddingHorizontal: 16, paddingBottom: 15},
-  searchWrapper: {
+  headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 48,
+    paddingHorizontal: 10,
+    marginTop: 2,
+    marginBottom: 10,
+    width: '100%',
   },
+  searchWrapper: {
+    flex: 8, // Takes up 80% of the space
+    marginRight: 10,
+  },
+  searchBarContainer: {
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    padding: 0,
+  },
+  searchBarInput: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 10,
+    height: 45,
+  },
+  addButton: {
+    flex: 2, // Takes up 20% of the space
+    height: 45,
+    backgroundColor: '#2f33f7', // Professional Blue
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 28, // Keeps the "+" vertically centered
+  },
+  searchSection: {paddingHorizontal: 16, paddingBottom: 15},
+
   searchIcon: {marginRight: 8, fontSize: 16},
   searchInput: {flex: 1, fontSize: 15, color: '#1e293b', fontWeight: '500'},
 
@@ -269,11 +318,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   gridItemActive: {
-    borderColor: '#6366f1',
+    borderColor: '#2f33f7',
     backgroundColor: '#f8faff',
     borderWidth: 1.5,
     shadowOpacity: 0.15,
-    shadowColor: '#6366f1',
+    shadowColor: '#2f33f7',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -322,7 +371,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#6366f1',
+    backgroundColor: '#2f33f7',
     borderRadius: 12,
     padding: 2,
   },
@@ -355,7 +404,7 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#6366f1',
+    color: '#2f33f7',
   },
   // gridItem: {
   //   width: ITEM_WIDTH,
@@ -454,7 +503,7 @@ const styles = StyleSheet.create({
 
     right: 20,
     backgroundColor: '#1e293b',
-    borderRadius: 24,
+    borderRadius: 18,
     padding: 1,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 10},
@@ -476,10 +525,10 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   badge: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#2f33f7',
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },

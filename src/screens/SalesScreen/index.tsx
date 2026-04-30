@@ -40,6 +40,7 @@ import ItemEditModal from './ItemEditModal';
 import CustomDropdown from '../../components/CustomDropdown';
 import CustomerModal from '../../components/Customer/CustomerModal';
 import GradientButton from '../../components/Buttons/GradientButton';
+import color from '../../assets/Color/color';
 export default function SalesScreen() {
   const dispatch = useDispatch();
   const beepSound = useRef<Sound | null>(null);
@@ -349,7 +350,7 @@ export default function SalesScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
         <View style={styles.container}>
           {/* 🔹 TOP SECTION */}
-          <View style={styles.container}>
+          <View style={styles.subContainer}>
             <View style={styles.topActionBar}>
               {/* Left Section: Action Buttons */}
               <View style={styles.buttonGroup}>
@@ -368,7 +369,7 @@ export default function SalesScreen() {
                   <Text
                     style={[
                       styles.browseButtonText,
-                      selectedCustomer && {color: '#6366f1'},
+                      selectedCustomer && {color: color.themeBlue},
                     ]}>
                     {selectedCustomer
                       ? ` ${
@@ -389,22 +390,9 @@ export default function SalesScreen() {
                   onSelect={val => setPaymentMode(val)}
                 />
               </View>
-
-              {/* <TouchableOpacity
-                style={[
-                  styles.cameraToggleButton,
-                  isCameraVisible && styles.cameraActiveBtn,
-                ]}
-                onPress={() => setIsCameraVisible(!isCameraVisible)}>
-                {isCameraVisible ? (
-                  <Text style={styles.cameraActiveIcon}>✕</Text>
-                ) : (
-                  <ScanIcon width={28} height={28} />
-                )}
-              </TouchableOpacity> */}
             </View>
 
-            {/* Camera Preview Section aasdfdgaasdgsdaxdfgdfgfgfd*/}
+            {/* Camera Preview Section */}
             {isCameraVisible && (
               <View style={styles.cameraContainer}>
                 {device && hasPermission ? (
@@ -706,6 +694,7 @@ export default function SalesScreen() {
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#f8fafc'},
+  subContainer: {padding: 0},
   topActionBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -713,6 +702,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     backgroundColor: '#fff',
+    marginBottom: 12,
   },
   buttonGroup: {
     flexDirection: 'row',
@@ -732,7 +722,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
   },
   selectedButtonActive: {
-    borderColor: '#6366f1',
+    borderColor: color.themeBlue,
     backgroundColor: '#f5f3ff',
   },
   clearCustomerBtn: {

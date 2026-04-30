@@ -11,7 +11,7 @@ import ButtonPreferences from '../../components/ButtonPreferences';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../routes/navigation';
-import ArrowRight from '../../assets/Icons/right-arrrow.svg';
+import ArrowRight from '../../assets/Icons/right-arrow.svg';
 import Help from '../../assets/Icons/help.svg';
 import Filter from '../../assets/Icons/filter-svgrepo-com.svg';
 

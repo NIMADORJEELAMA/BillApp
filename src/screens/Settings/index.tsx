@@ -16,7 +16,7 @@ import ImagePicker from 'react-native-image-crop-picker';
 import LinearGradient from 'react-native-linear-gradient';
 import color from '../../assets/Color/color';
 
-import ArrowRight from '../../assets/Icons/right-arrrow.svg';
+import ArrowRight from '../../assets/Icons/right-arrow.svg';
 import Help from '../../assets/Icons/help.svg';
 import Setting from '../../assets/Icons/settings.svg';
 

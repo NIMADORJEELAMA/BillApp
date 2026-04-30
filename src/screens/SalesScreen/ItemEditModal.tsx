@@ -10,14 +10,21 @@ import {
   Platform,
   TouchableWithoutFeedback,
 } from 'react-native';
+import GradientButton from '../../components/Buttons/GradientButton';
+import color from '../../assets/Color/color';
 
 const GST_SLABS = [0, 5, 12, 18, 28];
 
+// Fixed Interface: onSave now correctly expects the updated data object
 interface CartItemProps {
   isVisible: boolean;
   onClose: () => void;
   item: any;
-  onSave: () => void;
+  onSave: (data: {
+    price: number;
+    lineDiscount: number;
+    taxRate: number;
+  }) => void;
 }
 
 export default function ItemEditModal({
@@ -32,12 +39,11 @@ export default function ItemEditModal({
 
   useEffect(() => {
     if (item && isVisible) {
-      setPrice(item.price.toString());
+      setPrice(item.price?.toString() || '0');
       setDiscount((item.lineDiscount || 0).toString());
       setGst(item.taxRate || 0);
     }
   }, [item, isVisible]);
-  console.log('item', item);
 
   const handleSave = () => {
     onSave({
@@ -49,60 +55,66 @@ export default function ItemEditModal({
   };
 
   return (
-    <Modal visible={isVisible} transparent animationType="slide">
+    <Modal
+      visible={isVisible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose} // Required for Android back button
+    >
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
+          {/* Stops the click from bubbling up and closing the modal when clicking the sheet */}
           <TouchableWithoutFeedback>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={styles.sheet}>
-              {/* Handle Bar for Liquid Look */}
               <View style={styles.handle} />
 
               <View style={styles.headerContainer}>
                 <View style={styles.titleWrapper}>
                   <Text style={styles.labelCaps}>ITEM NAME</Text>
-                  <Text style={styles.titleText}>{item?.name}</Text>
+                  <Text style={styles.titleText} numberOfLines={1}>
+                    {item?.name || 'Unknown Item'}
+                  </Text>
                 </View>
 
                 <View style={styles.stockBadge}>
                   <Text style={styles.stockLabel}>STOCK</Text>
-                  <Text style={styles.stockValue}>{item?.stock}</Text>
+                  <Text style={styles.stockValue}>{item?.stock ?? 0}</Text>
                 </View>
               </View>
 
               <View style={styles.form}>
-                {/* Selling Price */}
                 {/* <Text style={styles.label}>Selling Price (per unit)</Text>
                 <View style={styles.inputWrapper}>
                   <Text style={styles.currency}>₹</Text>
                   <TextInput
                     style={styles.input}
-                    keyboardType="numeric"
+                    keyboardType="decimal-pad"
                     value={price}
                     onChangeText={setPrice}
+                    placeholder="0.00"
                   />
                 </View> */}
 
-                {/* Line Discount */}
                 <Text style={styles.label}>Item Discount (Total ₹)</Text>
                 <View style={styles.inputWrapper}>
                   <Text style={styles.currency}>-₹</Text>
                   <TextInput
                     style={styles.input}
-                    keyboardType="numeric"
+                    keyboardType="decimal-pad"
                     value={discount}
                     placeholder="0.00"
                     onChangeText={setDiscount}
                   />
                 </View>
 
-                {/* GST Slabs */}
                 <Text style={styles.label}>Tax Slab (GST %)</Text>
                 <View style={styles.gstContainer}>
                   {GST_SLABS.map(slab => (
                     <TouchableOpacity
                       key={slab}
+                      activeOpacity={0.7}
                       style={[
                         styles.gstOption,
                         gst === slab && styles.gstActive,
@@ -119,10 +131,14 @@ export default function ItemEditModal({
                   ))}
                 </View>
               </View>
-
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-                <Text style={styles.saveBtnText}>Update Item</Text>
-              </TouchableOpacity>
+              <View style={{marginTop: 30}}>
+                <GradientButton
+                  title="Update Item"
+                  onPress={handleSave}
+                  // loading={isSubmitting} // Show spinner when true
+                  // containerStyle={styles.btnPrimary} // Keep your layout flex
+                />
+              </View>
             </KeyboardAvoidingView>
           </TouchableWithoutFeedback>
         </View>
@@ -130,7 +146,6 @@ export default function ItemEditModal({
     </Modal>
   );
 }
-
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -233,16 +248,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  gstActive: {backgroundColor: '#1e293b', borderColor: '#1e293b'},
+  gstActive: {backgroundColor: color.themeBlue, borderColor: color.themeBlue},
   gstText: {fontWeight: '700', color: '#64748b'},
   gstTextActive: {color: '#fff'},
-  saveBtn: {
-    backgroundColor: '#1e293b',
-    height: 56,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 30,
-  },
-  saveBtnText: {color: '#fff', fontWeight: '800', fontSize: 16},
 });

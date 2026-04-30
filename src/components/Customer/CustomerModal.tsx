@@ -15,6 +15,10 @@ import {
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
 import {useSelector} from 'react-redux';
+import SearchBar from '../Searchbar';
+import color from '../../assets/Color/color';
+import RightIcon from '../../assets/Icons/right-arrow.svg';
+import GradientButton from '../Buttons/GradientButton';
 
 const CustomerItem = React.memo(({item, onSelect}) => (
   <TouchableOpacity style={styles.customerItem} onPress={() => onSelect(item)}>
@@ -22,7 +26,15 @@ const CustomerItem = React.memo(({item, onSelect}) => (
       <Text style={styles.custName}>{item.name}</Text>
       <Text style={styles.custPhone}>{item.phone || 'No phone'}</Text>
     </View>
-    <Text style={styles.selectArrow}>→</Text>
+    <View style={{marginRight: 10}}>
+      <RightIcon
+        width={12}
+        height={12}
+        fill={color.lightGrey}
+        stroke={color.lightGrey}
+        strokeWidth={30} // Increase this for bolder lines
+      />
+    </View>
   </TouchableOpacity>
 ));
 
@@ -128,12 +140,18 @@ const CustomerModal = ({isVisible, onClose, onSelect, initialData}) => {
             </View>
 
             <View style={styles.searchContainer}>
-              <TextInput
+              <SearchBar
                 style={styles.searchInput}
                 placeholder="Search name or phone..."
                 value={search}
                 onChangeText={setSearch}
               />
+              {/* <TextInput
+                style={styles.searchInput}
+                placeholder="Search name or phone..."
+                value={search}
+                onChangeText={setSearch}
+              /> */}
               <TouchableOpacity
                 style={styles.quickAddBtn}
                 onPress={() => {
@@ -151,12 +169,15 @@ const CustomerModal = ({isVisible, onClose, onSelect, initialData}) => {
                   onSelect(null);
                   onClose();
                 }}>
-                <Text style={styles.walkInText}>👤 Walk-in Customer</Text>
+                <Text style={styles.walkInText}> Walk-in Customer</Text>
               </TouchableOpacity>
             )}
 
             {loading && customers.length === 0 ? (
-              <ActivityIndicator color="#6366f1" style={{marginVertical: 20}} />
+              <ActivityIndicator
+                color={color.themeBlue}
+                style={{marginVertical: 20}}
+              />
             ) : (
               <FlatList
                 data={customers}
@@ -205,14 +226,23 @@ const CustomerModal = ({isVisible, onClose, onSelect, initialData}) => {
               />
 
               <View style={styles.btnRow}>
-                <TouchableOpacity
-                  style={styles.cancelBtn}
+                <GradientButton
+                  title="Cancel"
+                  colors={['#F3F4F6', '#E5E7EB']} // Light gray gradient
                   onPress={() =>
                     initialData ? handleResetAndClose() : setViewMode('list')
-                  }>
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                  }
+                  textStyle={{color: '#374151'}} // Darker text for contrast on gray
+                  // disabled={isSubmitting} // Disable while the other button is loading
+                  containerStyle={styles.btnSecondary} // Keep your layout flex
+                />
+                <GradientButton
+                  title={initialData ? 'Update' : 'Create & Select'}
+                  onPress={handleSaveCustomer}
+                  loading={isSaving} // Show spinner when true
+                  containerStyle={styles.btnPrimary} // Keep your layout flex
+                />
+                {/* <TouchableOpacity
                   style={styles.saveBtn}
                   onPress={handleSaveCustomer}
                   disabled={isSaving}>
@@ -223,7 +253,7 @@ const CustomerModal = ({isVisible, onClose, onSelect, initialData}) => {
                       {initialData ? 'Update' : 'Create & Select'}
                     </Text>
                   )}
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             </View>
           </KeyboardAvoidingView>
@@ -271,7 +301,7 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   quickAddBtn: {
-    backgroundColor: '#1e293b',
+    backgroundColor: color.themeBlue,
     borderRadius: 12,
     paddingHorizontal: 16,
     justifyContent: 'center',
@@ -279,7 +309,7 @@ const styles = StyleSheet.create({
   },
   quickAddBtnText: {color: '#fff', fontWeight: '700'},
   walkInOption: {
-    padding: 15,
+    padding: 8,
     backgroundColor: '#f5f3ff',
     borderRadius: 12,
     borderWidth: 1,
@@ -344,6 +374,12 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  btnSecondary: {
+    flex: 1,
+  },
+  btnPrimary: {
+    flex: 1.5,
   },
   saveText: {fontWeight: '800', color: '#fff'},
 });
