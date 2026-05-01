@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 interface SearchableDropdownProps {
   label: string;
+  required?: boolean;
   value: string;
   onChangeText: (text: string) => void;
   data: any[];
@@ -23,6 +24,7 @@ interface SearchableDropdownProps {
 
 export default function SearchableDropdown({
   label,
+  required,
   value,
   onChangeText,
   data,
@@ -39,7 +41,9 @@ export default function SearchableDropdown({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>
+        {label} {required && <Text style={styles.required}>*</Text>}
+      </Text>
 
       <TouchableOpacity
         style={styles.trigger}
@@ -112,6 +116,9 @@ export default function SearchableDropdown({
 const styles = StyleSheet.create({
   container: {marginBottom: 16},
   label: {fontSize: 12, fontWeight: '700', marginBottom: 6, color: '#475569'},
+  required: {
+    color: '#ef4444',
+  },
   trigger: {
     backgroundColor: '#f8fafc',
     borderWidth: 1,

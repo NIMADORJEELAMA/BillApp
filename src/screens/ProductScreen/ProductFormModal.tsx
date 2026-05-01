@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
+  Image,
 } from 'react-native';
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
@@ -21,12 +22,17 @@ import AppInput from '../../components/Input/AppInput';
 import SearchableDropdown from '../../components/SearchableDropdown';
 import CustomDropdown from '../../components/CustomDropdown';
 import ProductBarcodeCard from './ProductBarcodeCard';
+import CloseIcon from '../../assets/Icons/closeIcon.svg';
 import {
   Camera,
   useCameraDevice,
   useCodeScanner,
 } from 'react-native-vision-camera';
 import {set} from 'date-fns';
+import {is} from 'date-fns/locale';
+import color from '../../assets/Color/color';
+import GradientButton from '../../components/Buttons/GradientButton';
+
 interface ProductFormModalProps {
   isVisible: boolean;
   onClose: () => void;
@@ -390,6 +396,7 @@ export default function ProductFormModal({
               <View style={styles.card}>
                 <View style={{zIndex: 6000, elevation: 6}}>
                   <SearchableDropdown
+                    required
                     label="Product Name"
                     value={form.name}
                     loading={isSearching}
@@ -457,61 +464,60 @@ export default function ProductFormModal({
                     />
                   </View>
                   <View style={styles.buttonGroup}>
-                    {/* SCAN BUTTON */}
-                    <TouchableOpacity
-                      style={[
-                        styles.generateButton,
-                        {backgroundColor: '#10b981'},
-                      ]}
-                      onPress={requestCameraPermission}>
-                      <Text style={styles.generateButtonText}>SCAN</Text>
-                    </TouchableOpacity>
-
                     {/* GEN BUTTON */}
                     <TouchableOpacity
                       style={styles.generateButton}
                       onPress={generateBarcode}>
-                      <Text style={styles.generateButtonText}>GEN</Text>
+                      <Image
+                        source={require('../../assets/Icons/gen.png')}
+                        style={styles.buttonIcon}
+                      />
                     </TouchableOpacity>
-                  </View>
-                </View>
-                {/* <View style={styles.barcodeRow}>
-                  <View style={{flex: 1}}>
-                    <AppInput
-                      label="Barcode" // Empty label if you want to use the card's header logic
-                      containerStyle={{flex: 1, marginBottom: 0}}
-                      value={form.barcode}
-                      placeholder="Enter barcode"
-                      onChangeText={v => handleInputChange('barcode', v)}
-                    />
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'flex-end',
-                      gap: 5,
-                    }}>
+                    {/* SCAN BUTTON */}
                     <TouchableOpacity
                       style={[
                         styles.generateButton,
-                        {backgroundColor: '#10b981'},
-                      ]} // Green for scan
-                      onPress={() => setIsScannerVisible(true)}>
+                        {backgroundColor: color.orange},
+                      ]}
+                      onPress={requestCameraPermission}>
                       <Text style={styles.generateButtonText}>SCAN</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.generateButton}
-                      onPress={generateBarcode}>
-                      <Text style={styles.generateButtonText}>GEN</Text>
-                    </TouchableOpacity>
                   </View>
-                </View> */}
+                </View>
+                {isScannerVisible && (
+                  <View style={styles.inlineScannerWrapper}>
+                    {device == null ? (
+                      <ActivityIndicator size="small" color="#000" />
+                    ) : (
+                      <View style={styles.cameraClip}>
+                        <Camera
+                          style={StyleSheet.absoluteFill}
+                          device={device}
+                          isActive={isScannerVisible}
+                          codeScanner={codeScanner}
+                        />
+
+                        {/* Close Button Overlay */}
+                        <TouchableOpacity
+                          style={styles.inlineCloseBtn}
+                          onPress={() => setIsScannerVisible(false)}>
+                          <View>
+                            <CloseIcon width={18} height={18} color="#fff" />
+                          </View>
+                        </TouchableOpacity>
+
+                        {/* Subtle Scan Line for UI feedback */}
+                        <View style={styles.scanLine} />
+                      </View>
+                    )}
+                  </View>
+                )}
 
                 <View style={styles.row}>
                   <View style={{flex: 1}}>
                     <AppInput
-                      label="Stock" // Empty label if you want to use the card's header logic
+                      required
+                      label="Stock"
                       containerStyle={{flex: 1, marginBottom: 0}}
                       value={form.stockQty}
                       placeholder="0"
@@ -532,6 +538,7 @@ export default function ProductFormModal({
                 </View>
                 <View style={{zIndex: 5000, elevation: 5}}>
                   <SearchableDropdown
+                    required
                     label="Category"
                     value={searchQuery} // Shows the name in the "trigger" boxs
                     data={filteredCategories}
@@ -551,25 +558,20 @@ export default function ProductFormModal({
 
               {/* BUTTONS */}
               <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={[styles.secondaryButton, {flex: 1, marginBottom: 0}]}
+                <GradientButton
+                  title={editingId ? 'UPDATE' : 'CREATE'}
+                  colors={['#F3F4F6', '#E5E7EB']} // Light gray gradient
                   onPress={() => handleSave(false)}
-                  disabled={loading}>
-                  <Text style={styles.secondaryText}>
-                    {editingId ? 'UPDATE' : 'CREATE'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.primaryButton, {flex: 1, marginBottom: 0}]}
+                  textStyle={{color: '#374151'}} // Darker text for contrast on gray
+                  disabled={loading} // Disable while the other button is loading
+                  containerStyle={styles.btnSecondary} // Keep your layout flex
+                />
+                <GradientButton
+                  title="SAVE & PRINT"
                   onPress={() => handleSave(true)}
-                  disabled={loading}>
-                  {loading ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text style={styles.primaryText}>SAVE & PRINT</Text>
-                  )}
-                </TouchableOpacity>
+                  loading={loading} // Show spinner when true
+                  containerStyle={styles.btnPrimary} // Keep your layout flex
+                />
               </View>
               {/* <View>
                 <TouchableOpacity
@@ -588,30 +590,7 @@ export default function ProductFormModal({
               </View> */}
             </ScrollView>
           </KeyboardAvoidingView>
-          <Modal visible={isScannerVisible} animationType="slide">
-            <View style={styles.scannerContainer}>
-              {device == null ? (
-                <ActivityIndicator size="large" color="#fff" />
-              ) : (
-                <Camera
-                  style={StyleSheet.absoluteFill}
-                  device={device}
-                  isActive={isScannerVisible}
-                  codeScanner={codeScanner}
-                />
-              )}
 
-              {/* Overlay UI */}
-              <View style={styles.overlay}>
-                <View style={styles.scanWindow} />
-                <TouchableOpacity
-                  style={styles.cancelScanBtn}
-                  onPress={() => setIsScannerVisible(false)}>
-                  <Text style={styles.cancelScanText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
           <ProductBarcodeCard
             isVisible={showPrintModal}
             product={createdProduct}
@@ -647,7 +626,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   headerTitle: {fontSize: 20, fontWeight: '700', color: '#1e293b'},
-  closeX: {fontSize: 20},
+  closeX: {fontSize: 20, color: color.black},
 
   container: {
     padding: 16,
@@ -662,31 +641,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 3,
   },
-  buttonGroup: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-end',
-  },
-  scannerContainer: {
-    flex: 1,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
-  scanWindow: {
-    width: 250,
-    height: 180,
-    borderWidth: 2,
-    borderColor: '#10b981',
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-  },
+
   cancelScanBtn: {
     position: 'absolute',
     bottom: 50,
@@ -717,16 +672,77 @@ const styles = StyleSheet.create({
 
   generateButton: {
     marginLeft: 8,
-    padding: 14,
-    backgroundColor: '#2563eb',
+    padding: 6,
+    paddingHorizontal: 10,
+
+    backgroundColor: color.themeBlue,
     borderRadius: 10,
 
     justifyContent: 'center',
     alignItems: 'center',
   },
+  buttonIcon: {
+    width: 30,
+    height: 30,
+    tintColor: '#fff',
+  },
 
   generateButtonText: {
     color: '#fff',
+  },
+  inlineScannerWrapper: {
+    height: 160, // Fixed height for the inline container
+    width: '100%',
+    backgroundColor: '#000',
+    borderRadius: 12,
+    marginVertical: 15,
+    overflow: 'hidden', // Ensures camera doesn't bleed past corners
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  cameraClip: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  inlineCloseBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent circle
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  inlineCloseText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  scanLine: {
+    position: 'absolute',
+    top: '50%',
+    left: '10%',
+    right: '10%',
+    height: 2,
+    backgroundColor: '#10b981',
+    opacity: 0.6,
+    shadowColor: '#10b981',
+    shadowOffset: {width: 0, height: 0},
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingTop: 25, // Aligns buttons with the input field baseline
+    paddingLeft: 8,
   },
 
   dropdownList: {
@@ -754,6 +770,12 @@ const styles = StyleSheet.create({
     gap: 12, // Space between buttons
     marginTop: 20, // Space above the button group
     marginBottom: 30, // Bottom padding for the ScrollView
+  },
+  btnSecondary: {
+    flex: 1,
+  },
+  btnPrimary: {
+    flex: 1.5,
   },
   primaryButton: {
     backgroundColor: '#2563eb',

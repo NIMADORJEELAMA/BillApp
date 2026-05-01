@@ -1,3 +1,5 @@
+import {green} from 'react-native-reanimated/lib/typescript/Colors';
+
 const color = {
   lightgray: '#BCCCDC',
   white: '#fff',
@@ -9,6 +11,8 @@ const color = {
   // dark: '#1E293B',
   dark: '#000',
   themeBlue: '#2f33f7',
+  green: '#60B246',
+  orange: '#FC8019',
 };
 
 export default color;
