@@ -21,6 +21,8 @@ import ViewShot from 'react-native-view-shot';
 import LabelTemplate from '../components/Printer/LabelTemplate';
 import {printSingleLabel} from '../services/PrintService';
 import {BLEPrinter} from 'react-native-thermal-receipt-printer-image-qr';
+import GradientButton from '../components/Buttons/GradientButton';
+import {tr} from 'date-fns/locale';
 
 export default function BulkPrintScreen() {
   const [loading, setLoading] = useState(true);
@@ -179,62 +181,6 @@ export default function BulkPrintScreen() {
       </View>
     );
   };
-  // Filter products based on selection for the Preview Modal
-  // const itemsToPrint = useMemo(
-  //   () => products.filter(p => selectedIds.has(p.id)),
-  //   [products, selectedIds],
-  // );
-  // const startBatchPrint = async () => {
-  //   setIsPrinting(true);
-  //   try {
-  //     for (let i = 0; i < itemsToPrint.length; i++) {
-  //       setPrintProgress(i + 1);
-  //       const item = itemsToPrint[i];
-  //       const ref = labelRefs.current[item.id];
-
-  //       if (!ref) {
-  //         console.warn(`No ref for item ${item.id}`);
-  //         continue;
-  //       }
-
-  //       await printSingleLabel(ref);
-
-  //       // Delay between labels to avoid BT buffer overflow
-  //       if (i < itemsToPrint.length - 1) {
-  //         await new Promise(res => setTimeout(res, 350));
-  //       }
-  //     }
-  //     Alert.alert('Success', 'All labels printed successfully!');
-  //     setIsPreviewVisible(false);
-  //     setSelectedIds(new Set());
-  //   } catch (error: any) {
-  //     Alert.alert('Print Error', error.message);
-  //   } finally {
-  //     setIsPrinting(false);
-  //     setPrintProgress(0);
-  //   }
-  // };
-
-  // const renderItem = ({item}: any) => {
-  //   const isSelected = selectedIds.has(item.id);
-  //   return (
-  //     <TouchableOpacity
-  //       style={[styles.row, isSelected && styles.rowSelected]}
-  //       onPress={() => toggleSelect(item.id)}>
-  //       <View style={styles.checkbox}>
-  //         {isSelected && <View style={styles.checkboxInner} />}
-  //       </View>
-  //       <View style={styles.info}>
-  //         <Text style={styles.name}>{item.name}</Text>
-  //         <Text style={styles.barcode}>{item.barcode || 'No Barcode'}</Text>
-  //       </View>
-  //       <View style={styles.qtyContainer}>
-  //         <Text style={styles.price}>₹{item.price}</Text>
-  //         <Text style={styles.stock}>Stock: {item.stockQty}</Text>
-  //       </View>
-  //     </TouchableOpacity>
-  //   );
-  // };
 
   return (
     <MainLayout title="Bulk Label Print" showBack>
@@ -282,16 +228,13 @@ export default function BulkPrintScreen() {
         {/* Floating Print Action Button */}
         <View style={styles.footer}>
           <Text style={styles.footerTotal}>{selectedIds.size} Selected</Text>
-          <TouchableOpacity
-            style={[
-              styles.printBtn,
-              selectedIds.size === 0 && {backgroundColor: '#cbd5e1'},
-            ]}
+
+          <GradientButton
+            title="SAVE & PRINT"
             onPress={() => setIsPreviewVisible(true)}
-            // disabled={selectedIds.size === 0}
-          >
-            <Text style={styles.printBtnText}>PREVIEW & PRINT</Text>
-          </TouchableOpacity>
+            // loading={isSubmitting} // Show spinner when true
+            containerStyle={styles.btnPrimary} // Keep your layout flex
+          />
         </View>
 
         {/* --- BATCH PREVIEW MODAL --- */}
@@ -517,6 +460,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderColor: '#e2e8f0',
+    marginBottom: 4,
+  },
+  btnPrimary: {
+    flex: 0.75,
   },
   printBtn: {
     backgroundColor: '#2563eb',

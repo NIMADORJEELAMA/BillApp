@@ -10,7 +10,7 @@ const color = {
   purple: '#c2bff6',
   // dark: '#1E293B',
   dark: '#000',
-  themeBlue: '#2f33f7',
+  themeBlue: '#6366F1',
   green: '#60B246',
   orange: '#FC8019',
 };
