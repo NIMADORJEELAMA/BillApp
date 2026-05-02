@@ -81,7 +81,7 @@ const AnimatedTabButton = (props: any) => {
     const borderAnimation = Animated.timing(borderWidth, {
       toValue: isSelected ? 100 : 0,
       duration: 300,
-      useNativeDriver: false, // Layout properties (width) can't use native sdfgfds
+      useNativeDriver: false, // Layout properties (width) can't use native cfhbfgh
     });
 
     const scaleAnimation = Animated.timing(scaleValue, {
