@@ -14,6 +14,7 @@ interface SearchBarProps {
   onChangeText: (text: string) => void;
   placeholder?: string;
   style?: ViewStyle;
+  autofocus?: boolean;
 }
 
 const SearchBar = ({
@@ -21,6 +22,7 @@ const SearchBar = ({
   onChangeText,
   placeholder = 'Search...',
   style,
+  autofocus = false,
 }: SearchBarProps) => {
   return (
     <View style={[styles.container, style]}>
@@ -39,6 +41,7 @@ const SearchBar = ({
         onChangeText={onChangeText}
         autoCorrect={false}
         spellCheck={false}
+        autoFocus={autofocus}
       />
 
       {value.length > 0 && (

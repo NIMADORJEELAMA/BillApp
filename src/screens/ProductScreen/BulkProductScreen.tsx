@@ -15,6 +15,7 @@ import {useNavigation} from '@react-navigation/native';
 import MainLayout from '../../screens/MainLayout'; // Adjust path
 import GradientButton from '../../components/Buttons/GradientButton';
 import color from '../../assets/Color/color';
+import SearchBar from '../../components/Searchbar'; // New SearchBar component
 
 interface Category {
   id: string | number;
@@ -27,7 +28,7 @@ export default function BulkProductScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-
+  const [searchQuery, setSearchQuery] = useState('');
   // Selection state
   const [activeSelection, setActiveSelection] = useState<{
     id: number;
@@ -98,20 +99,56 @@ export default function BulkProductScreen() {
     if (rows.length === 1) return;
     setRows(prev => prev.filter(r => r.id !== id));
   };
+  const getFilteredData = () => {
+    const data = activeSelection?.type === 'category' ? categories : UNITS;
+    const filtered = data.filter(item => {
+      const name = activeSelection?.type === 'category' ? item.name : item;
+      return name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
-  const handleSelect = (item: any) => {
+    // If selecting category and search doesn't perfectly match any item, add "Create" option
+    if (activeSelection?.type === 'category' && searchQuery.trim().length > 0) {
+      const exactMatch = categories.find(
+        c => c.name.toLowerCase() === searchQuery.toLowerCase().trim(),
+      );
+      if (!exactMatch) {
+        return [...filtered, {id: 'new', name: searchQuery, isNew: true}];
+      }
+    }
+    return filtered;
+  };
+  const handleSelect = async (item: any) => {
     if (!activeSelection) return;
     const {id, type} = activeSelection;
 
     if (type === 'category') {
-      updateCell(id, 'categoryId', item.id);
-      updateCell(id, 'categoryName', item.name);
+      if (item.isNew) {
+        setLoading(true);
+        try {
+          const res = await axiosInstance.post('/categories', {
+            name: item.name.trim(),
+          });
+          const newCat = res.data;
+          setCategories(prev => [...prev, newCat]);
+          updateCell(id, 'categoryId', newCat.id);
+          updateCell(id, 'categoryName', newCat.name);
+          Toast.show({type: 'success', text1: 'Category created'});
+        } catch (e) {
+          Toast.show({type: 'error', text1: 'Failed to create category'});
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        updateCell(id, 'categoryId', item.id);
+        updateCell(id, 'categoryName', item.name);
+      }
     } else {
       updateCell(id, 'unit', item);
     }
-    setActiveSelection(null);
-  };
 
+    setActiveSelection(null);
+    setSearchQuery(''); // Reset search
+  };
   const handleBulkSave = async () => {
     const isValid = rows.every(
       r => r.name && r.price && r.categoryId && r.barcode,
@@ -151,33 +188,52 @@ export default function BulkProductScreen() {
         <View style={styles.floatingOverlay}>
           <View style={styles.floatingPicker}>
             <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>
-                Selecting{' '}
-                {activeSelection.type === 'category'
-                  ? 'Category'
-                  : 'Product Unit'}
-              </Text>
+              <View style={styles.headerLeft}>
+                <Text style={styles.pickerTitle}>
+                  {activeSelection.type === 'category' ? 'Category' : 'Unit'}
+                </Text>
+                <SearchBar
+                  style={styles.searchInput}
+                  placeholder="Search or type new..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autofocus={true} // Fixed prop name from previous fix
+                />
+              </View>
+
               <TouchableOpacity
-                onPress={() => setActiveSelection(null)}
+                onPress={() => {
+                  setActiveSelection(null);
+                  setSearchQuery('');
+                }}
                 style={styles.closeArea}>
                 <Text style={styles.closeText}>Cancel</Text>
               </TouchableOpacity>
             </View>
 
             <FlatList
-              data={activeSelection.type === 'category' ? categories : UNITS}
-              keyExtractor={(_, i) => i.toString()}
+              data={getFilteredData()}
+              keyExtractor={(item, i) =>
+                item.id ? item.id.toString() : i.toString()
+              }
               contentContainerStyle={styles.listContainer}
               renderItem={({item}) => (
                 <TouchableOpacity
-                  style={styles.listItem}
+                  style={[styles.listItem, item.isNew && styles.newItem]}
                   onPress={() => handleSelect(item)}>
-                  <Text style={styles.listItemText}>
-                    {activeSelection.type === 'category' ? item.name : item}
+                  <Text
+                    style={[
+                      styles.listItemText,
+                      item.isNew && styles.newItemText,
+                    ]}>
+                    {item.isNew ? `+ Create "${item.name}"` : item.name || item}
                   </Text>
-                  <View style={styles.arrow} />
+                  {!item.isNew && <View style={styles.arrow} />}
                 </TouchableOpacity>
               )}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>No matches found</Text>
+              }
             />
           </View>
         </View>
@@ -326,16 +382,56 @@ const styles = StyleSheet.create({
   },
   pickerHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
+    alignItems: 'flex-end', // Aligns the Cancel button with the SearchBar input
+    paddingHorizontal: 15,
+    paddingBottom: 15,
+    paddingTop: 10,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
-    backgroundColor: '#fff',
   },
-  pickerTitle: {fontSize: 14, fontWeight: '800', color: '#1e293b'},
-  closeArea: {padding: 5},
-  closeText: {color: '#ef4444', fontWeight: '600', fontSize: 13},
+  headerLeft: {
+    flex: 1,
+    marginRight: 15, // Space between SearchBar and Cancel button
+  },
+  pickerTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  searchInput: {
+    // Ensure this style doesn't have a fixed width
+    width: '100%',
+  },
+  closeArea: {
+    height: 48, // Match your SearchBar height exactly
+    justifyContent: 'center', // Centers the text vertically within that height
+    paddingBottom: 0,
+  },
+  closeText: {
+    color: '#ef4444',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  newItem: {
+    backgroundColor: '#f0fdf4', // Light green background
+    borderBottomColor: '#bbf7d0',
+  },
+  newItemText: {
+    color: '#166534', // Dark green text
+    fontWeight: 'bold',
+  },
+  emptyText: {
+    textAlign: 'center',
+    padding: 20,
+    color: '#94a3b8',
+    fontSize: 14,
+  },
+
   listContainer: {paddingVertical: 5},
   listItem: {
     flexDirection: 'row',
