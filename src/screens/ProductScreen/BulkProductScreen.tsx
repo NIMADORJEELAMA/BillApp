@@ -197,7 +197,7 @@ export default function BulkProductScreen() {
                   placeholder="Search or type new..."
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  autofocus={true} // Fixed prop name from previous fixsdfgasdg
+                  autofocus={true} // Fixed prop name from previous asdf
                 />
               </View>
 
