@@ -38,7 +38,13 @@ const CustomerItem = React.memo(({item, onSelect}) => (
   </TouchableOpacity>
 ));
 
-const CustomerModal = ({isVisible, onClose, onSelect, initialData}) => {
+const CustomerModal = ({
+  isVisible,
+  onClose,
+  onSelect,
+  initialData,
+  startWithList = false,
+}) => {
   const user = useSelector(state => state.auth.user);
   const orgId = user?.orgId;
 
@@ -52,18 +58,21 @@ const CustomerModal = ({isVisible, onClose, onSelect, initialData}) => {
 
   const searchTimeout = useRef(null);
 
-  // Sync mode and data when initialData changes
+  // Inside CustomerModal.tsx
+
+  // Add a state to track if we specifically want to start in "Add" mode
   useEffect(() => {
-    if (initialData && isVisible) {
-      setFormData({
-        name: initialData.name,
-        phone: initialData.phone || '',
-      });
-      setViewMode('form');
-    } else {
-      setViewMode('list');
+    if (isVisible) {
+      if (initialData) {
+        setFormData({name: initialData.name, phone: initialData.phone || ''});
+        setViewMode('form');
+      } else if (startWithList) {
+        setViewMode('list');
+      } else {
+        setViewMode('form'); // Default to form for "Add New"
+      }
     }
-  }, [initialData, isVisible]);
+  }, [initialData, isVisible, startWithList]);
 
   const fetchCustomers = useCallback(async (query = '') => {
     try {

@@ -7,12 +7,19 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
-  Text,
 } from 'react-native';
+import {Text} from '../../components/common/UI'; // Assuming your UI text component
 import MainLayout from '../../screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
 import CustomerModal from '../../components/Customer/CustomerModal';
+import SearchIcon from '../../assets/Icons/search.svg'; // Adjust paths
+import PlusIcon from '../../assets/Icons/plus.svg';
+import EditIcon from '../../assets/Icons/edit.svg';
+import DeleteIcon from '../../assets/Icons/trash.svg';
+import PhoneIcon from '../../assets/Icons/phone.svg';
+import SearchBar from '../../components/Searchbar';
+import color from '../../assets/Color/color';
 
 const CustomerScreen = () => {
   const [customers, setCustomers] = useState([]);
@@ -39,7 +46,6 @@ const CustomerScreen = () => {
     fetchCustomers();
   }, [fetchCustomers]);
 
-  // Handle Create or Update success from Modal
   const handleModalSuccess = customer => {
     setCustomers(prev => {
       const exists = prev.find(c => c.id === customer.id);
@@ -70,46 +76,72 @@ const CustomerScreen = () => {
     ]);
   };
 
-  const renderItem = ({item}) => (
-    <View style={styles.card}>
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.phone}>{item.phone || 'No phone'}</Text>
-      </View>
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.editBtn]}
-          onPress={() => {
-            setCustomerToEdit(item);
-            setIsModalVisible(true);
-          }}>
-          <Text style={styles.editBtnText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.deleteBtn]}
-          onPress={() => handleDelete(item.id, item.name)}>
-          <Text style={styles.deleteBtnText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const renderItem = ({item, index}) => {
+    return (
+      <View style={styles.card}>
+        <View style={styles.avatar}>
+          {/* +1 ensures the list starts at 1 instead of 0 */}
+          <Text style={styles.avatarText}>{index + 1}</Text>
+        </View>
 
+        <View style={styles.info}>
+          <Text style={styles.name}>{item.name}</Text>
+          <View style={styles.phoneRow}>
+            <PhoneIcon width={12} height={12} fill="#94a3b8" />
+            <Text style={styles.phone}>{item.phone || 'No phone'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => {
+              setCustomerToEdit(item);
+              setIsModalVisible(true);
+            }}>
+            <EditIcon
+              width={18}
+              height={18}
+              fill={color.Egrey}
+              color={color.dark}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => handleDelete(item.id, item.name)}>
+            <DeleteIcon width={18} height={18} fill="#ef4444" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
   return (
     <MainLayout
       title="Customers"
-      subtitle={`${customers.length} total`}
+      subtitle={`${customers.length} total subscribers`}
       showBack>
       <View style={styles.container}>
         <View style={styles.searchWrapper}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or phone..."
-            value={search}
-            onChangeText={val => {
-              setSearch(val);
-              fetchCustomers(val);
-            }}
-          />
+          <View style={{flex: 1, marginRight: 12}}>
+            <SearchBar
+              value={search}
+              onChangeText={val => {
+                setSearch(val);
+                fetchCustomers(val);
+              }}
+              placeholder="Search by name or phone..."
+              autofocus
+            />
+          </View>
+
+          <View>
+            <TouchableOpacity
+              style={styles.addIconBtn}
+              onPress={() => setIsModalVisible(true)}>
+              <PlusIcon width={20} height={20} fill="#fff" color={'#fff'} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <FlatList
@@ -119,8 +151,13 @@ const CustomerScreen = () => {
           contentContainerStyle={styles.listContent}
           onRefresh={() => fetchCustomers(search)}
           refreshing={loading}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            !loading && <Text style={styles.emptyText}>No customers found</Text>
+            !loading && (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No customers found</Text>
+              </View>
+            )
           }
         />
       </View>
@@ -128,6 +165,7 @@ const CustomerScreen = () => {
       <CustomerModal
         isVisible={isModalVisible}
         initialData={customerToEdit}
+        startWithList={false}
         onClose={() => {
           setIsModalVisible(false);
           setCustomerToEdit(null);
@@ -138,52 +176,104 @@ const CustomerScreen = () => {
   );
 };
 
-// ... Styles remain mostly the same
-
 const styles = StyleSheet.create({
-  container: {flex: 1},
+  container: {flex: 1, backgroundColor: '#f8fafc'},
   searchWrapper: {
-    padding: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  searchInput: {
-    backgroundColor: '#F4F7F8',
-    padding: 12,
-    borderRadius: 10,
-    fontSize: 16,
-  },
-  listContent: {padding: 15, paddingBottom: 100},
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // Minimal shadow for clean look
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+
+  listContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    // Soft Shadow
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    color: '#2563eb',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   info: {flex: 1},
-  name: {fontSize: 16, fontWeight: '700', color: '#121212'},
-  phone: {fontSize: 13, color: '#666', marginTop: 2},
-  actions: {flexDirection: 'row', gap: 8},
-  actionBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  name: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 2,
   },
-  editBtn: {backgroundColor: '#f1f5f9'},
-  editBtnText: {color: '#475569', fontWeight: '600', fontSize: 13},
-  deleteBtn: {backgroundColor: '#fef2f2'},
-  deleteBtnText: {color: '#ef4444', fontWeight: '600', fontSize: 13},
-  emptyText: {textAlign: 'center', marginTop: 40, color: '#888'},
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  phone: {
+    fontSize: 13,
+    color: '#64748b',
+    marginLeft: 4,
+  },
+  actions: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  iconBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  editText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2563eb',
+  },
+  delText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ef4444',
+  },
+  addIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: color.themeBlue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 60,
+  },
+  emptyText: {
+    color: '#94a3b8',
+    fontSize: 15,
+  },
 });
 
 export default CustomerScreen;

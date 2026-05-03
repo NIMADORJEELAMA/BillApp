@@ -667,8 +667,10 @@ export default function SalesScreen() {
           </View>
           <CustomerModal
             isVisible={isCustomerModalVisible}
+            initialData={selectedCustomer}
             onClose={() => setIsCustomerModalVisible(false)}
             onSelect={customer => setSelectedCustomer(customer)}
+            startWithList={true}
           />
           <ProductScreen
             isVisible={isAddModalVisible}
