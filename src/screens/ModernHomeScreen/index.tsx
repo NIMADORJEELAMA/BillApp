@@ -68,14 +68,22 @@ const DASHBOARD_MENU = [
     screen: 'SalesReportScreen',
     color: '#EEF2FF',
   },
-  // {
-  //   id: '5',
-  //   title: 'Sales Report',
-  //   subtitle: 'Client list',
-  //   image: require('../../../src/assets/Images_main/google.png'),
-  //   screen: 'SalesReportScreen',
-  //   color: '#FAF5FF',
-  // },
+  {
+    id: '5',
+    title: 'Sales Report',
+    subtitle: 'View sales report',
+    image: require('../../../src/assets/Icons/sales-report.webp'),
+    screen: 'SalesReportScreen',
+    color: '#EEF2FF',
+  },
+  {
+    id: '6',
+    title: 'Sales Report',
+    subtitle: 'View sales report',
+    image: require('../../../src/assets/Icons/sales-report.webp'),
+    screen: 'SalesReportScreen',
+    color: '#EEF2FF',
+  },
 ];
 //asdfasdfadsgasdgasdfgasdfg
 const ModernHomeScreen = () => {

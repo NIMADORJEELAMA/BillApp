@@ -13,8 +13,6 @@ import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
 import {useNavigation} from '@react-navigation/native';
 import MainLayout from '../../screens/MainLayout'; // Adjust path
-import GradientButton from '../../components/Buttons/GradientButton';
-import color from '../../assets/Color/color';
 
 interface Category {
   id: string | number;
@@ -28,7 +26,7 @@ export default function BulkProductScreen() {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Selection state
+  // Selection state (replaces Modal)
   const [activeSelection, setActiveSelection] = useState<{
     id: number;
     type: 'category' | 'unit';
@@ -96,6 +94,7 @@ export default function BulkProductScreen() {
 
   const deleteRow = (id: number) => {
     if (rows.length === 1) return;
+
     setRows(prev => prev.filter(r => r.id !== id));
   };
 
@@ -120,6 +119,7 @@ export default function BulkProductScreen() {
       Toast.show({type: 'error', text1: 'Missing required fields'});
       return;
     }
+
     setLoading(true);
     try {
       const payload = rows.map(r => ({
@@ -146,69 +146,66 @@ export default function BulkProductScreen() {
       title="Bulk Upload"
       subtitle={`${rows.length} Products`}
       showBack={true}>
-      {/* THE FLOATING SELECTOR OVERLAY */}
-      {activeSelection && (
-        <View style={styles.floatingOverlay}>
-          <View style={styles.floatingPicker}>
+      <View style={styles.container}>
+        {/* Inline Selection List (Visible only when picking) */}
+        {activeSelection && (
+          <View style={styles.inlinePicker}>
             <View style={styles.pickerHeader}>
               <Text style={styles.pickerTitle}>
-                Selecting{' '}
-                {activeSelection.type === 'category'
-                  ? 'Category'
-                  : 'Product Unit'}
+                Select {activeSelection.type}
               </Text>
-              <TouchableOpacity
-                onPress={() => setActiveSelection(null)}
-                style={styles.closeArea}>
-                <Text style={styles.closeText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setActiveSelection(null)}>
+                <Text style={{color: '#ef4444'}}>Close</Text>
               </TouchableOpacity>
             </View>
-
             <FlatList
+              horizontal
               data={activeSelection.type === 'category' ? categories : UNITS}
               keyExtractor={(_, i) => i.toString()}
-              contentContainerStyle={styles.listContainer}
               renderItem={({item}) => (
                 <TouchableOpacity
-                  style={styles.listItem}
+                  style={styles.chip}
                   onPress={() => handleSelect(item)}>
-                  <Text style={styles.listItemText}>
+                  <Text style={styles.chipText}>
                     {activeSelection.type === 'category' ? item.name : item}
                   </Text>
-                  <View style={styles.arrow} />
                 </TouchableOpacity>
               )}
             />
           </View>
-        </View>
-      )}
+        )}
 
-      <View style={styles.container}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
+            {/* Table Header */}
             <View style={styles.row}>
               <Text style={[styles.headerCell, {width: 140}]}>Name*</Text>
               <Text style={[styles.headerCell, {width: 120}]}>Category*</Text>
               <Text style={[styles.headerCell, {width: 80}]}>Unit</Text>
               <Text style={[styles.headerCell, {width: 80}]}>Price</Text>
-              <Text style={[styles.headerCell, {width: 80}]}>Cost Price</Text>
-              <Text style={[styles.headerCell, {width: 80}]}>Stock Qty</Text>
               <Text style={[styles.headerCell, {width: 150}]}>Barcode</Text>
               <Text style={[styles.headerCell, {width: 50}]}></Text>
             </View>
 
-            <ScrollView style={{maxHeight: 450}}>
+            {/* Table Body */}
+            <ScrollView style={{maxHeight: 400}}>
               {rows.map(row => (
                 <View key={row.id} style={styles.row}>
                   <TextInput
                     style={[styles.cell, {width: 140}]}
                     value={row.name}
                     placeholder="Name"
-                    placeholderTextColor="#94a3b8"
                     onChangeText={v => updateCell(row.id, 'name', v)}
                   />
                   <TouchableOpacity
-                    style={[styles.cell, styles.pickerTrigger, {width: 120}]}
+                    style={[
+                      styles.cell,
+                      styles.pickerTrigger,
+                      {width: 120},
+                      activeSelection?.id === row.id &&
+                        activeSelection.type === 'category' &&
+                        styles.activeCell,
+                    ]}
                     onPress={() =>
                       setActiveSelection({id: row.id, type: 'category'})
                     }>
@@ -218,7 +215,14 @@ export default function BulkProductScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.cell, styles.pickerTrigger, {width: 80}]}
+                    style={[
+                      styles.cell,
+                      styles.pickerTrigger,
+                      {width: 80},
+                      activeSelection?.id === row.id &&
+                        activeSelection.type === 'unit' &&
+                        styles.activeCell,
+                    ]}
                     onPress={() =>
                       setActiveSelection({id: row.id, type: 'unit'})
                     }>
@@ -232,32 +236,14 @@ export default function BulkProductScreen() {
                     keyboardType="numeric"
                     onChangeText={v => updateCell(row.id, 'price', v)}
                   />
-                  <TextInput
-                    style={[styles.cell, {width: 80}]}
-                    value={row.costPrice}
-                    placeholder="0.0"
-                    keyboardType="numeric"
-                    onChangeText={v => updateCell(row.id, 'costPrice', v)}
-                  />
-                  <TextInput
-                    style={[styles.cell, {width: 80}]}
-                    value={row.stockQty}
-                    placeholder="0"
-                    keyboardType="numeric"
-                    onChangeText={v => updateCell(row.id, 'stockQty', v)}
-                  />
+
                   <View
                     style={[
                       styles.cell,
                       {width: 150, flexDirection: 'row', alignItems: 'center'},
                     ]}>
                     <TextInput
-                      style={{
-                        flex: 1,
-                        padding: 0,
-                        fontSize: 12,
-                        color: '#1e293b',
-                      }}
+                      style={{flex: 1, padding: 0, fontSize: 12}}
                       value={row.barcode}
                       onChangeText={v => updateCell(row.id, 'barcode', v)}
                     />
@@ -271,9 +257,7 @@ export default function BulkProductScreen() {
                   <TouchableOpacity
                     style={styles.deleteBtn}
                     onPress={() => deleteRow(row.id)}>
-                    <Text style={{color: '#ef4444', fontWeight: 'bold'}}>
-                      ✕
-                    </Text>
+                    <Text style={{color: 'white'}}>✕</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -283,15 +267,19 @@ export default function BulkProductScreen() {
 
         <View style={styles.footer}>
           <TouchableOpacity style={styles.addRowBtn} onPress={addRow}>
-            <Text style={styles.addRowText}>+ Add Row</Text>
+            <Text style={styles.addRowText}>+ Add Product Row</Text>
           </TouchableOpacity>
 
-          <GradientButton
-            title="Upload All"
+          <TouchableOpacity
+            style={styles.saveBtn}
             onPress={handleBulkSave}
-            containerStyle={{marginTop: 10}}
-            disabled={loading}
-          />
+            disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveText}>SAVE ALL PRODUCTS</Text>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
     </MainLayout>
@@ -299,64 +287,7 @@ export default function BulkProductScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, padding: 10, backgroundColor: '#f8fafc'},
-
-  // Floating Selector Styles
-  floatingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)', // Darker dim
-    zIndex: 1000,
-    padding: 15,
-    justifyContent: 'flex-start',
-  },
-  floatingPicker: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    maxHeight: '60%', // Take up top half of screen
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 10},
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
-    overflow: 'hidden',
-  },
-  pickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-    backgroundColor: '#fff',
-  },
-  pickerTitle: {fontSize: 14, fontWeight: '800', color: '#1e293b'},
-  closeArea: {padding: 5},
-  closeText: {color: '#ef4444', fontWeight: '600', fontSize: 13},
-  listContainer: {paddingVertical: 5},
-  listItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#f1f5f9',
-  },
-  listItemText: {fontSize: 15, color: '#334155'},
-  arrow: {
-    width: 8,
-    height: 8,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderColor: '#cbd5e1',
-    transform: [{rotate: '45deg'}],
-  },
-
-  // Table Styles
+  container: {flex: 1, padding: 10},
   row: {flexDirection: 'row'},
   headerCell: {
     fontWeight: '700',
@@ -374,24 +305,42 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     backgroundColor: '#fff',
     fontSize: 13,
-    height: 48,
+    height: 45,
     justifyContent: 'center',
-    color: '#1e293b',
   },
+  activeCell: {borderColor: '#2563eb', backgroundColor: '#eff6ff'},
   pickerTrigger: {backgroundColor: '#f8fafc'},
-  pickerText: {fontSize: 12, color: '#334155', fontWeight: '500'},
-  genBtn: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  pickerText: {fontSize: 12, color: '#334155'},
+  inlinePicker: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    elevation: 3,
   },
-  genBtnText: {color: 'white', fontSize: 9, fontWeight: '900'},
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  pickerTitle: {fontSize: 12, fontWeight: 'bold', color: '#64748b'},
+  chip: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  chipText: {fontSize: 12, color: '#1e293b'},
+  genBtn: {backgroundColor: '#3b82f6', padding: 4, borderRadius: 4},
+  genBtnText: {color: 'white', fontSize: 9, fontWeight: 'bold'},
   deleteBtn: {
     width: 50,
-    backgroundColor: '#fff',
-    borderWidth: 0.5,
-    borderColor: '#e2e8f0',
+    backgroundColor: '#fee2e2',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -399,19 +348,19 @@ const styles = StyleSheet.create({
   addRowBtn: {
     marginTop: 10,
     padding: 12,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: color.themeBlue,
+    borderColor: '#64748b',
     alignItems: 'center',
     borderRadius: 8,
   },
-  addRowText: {color: color.themeBlue, fontWeight: '700'},
+  addRowText: {color: '#64748b', fontWeight: '600'},
   saveBtn: {
-    marginTop: 12,
-    backgroundColor: '#0f172a', // Dark theme button
+    marginTop: 10,
+    backgroundColor: '#10b981',
     padding: 16,
     borderRadius: 10,
     alignItems: 'center',
   },
-  saveText: {color: '#fff', fontWeight: '800', letterSpacing: 1.5},
+  saveText: {color: '#fff', fontWeight: 'bold', letterSpacing: 1},
 });
