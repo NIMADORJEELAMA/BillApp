@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    // Soft Shadowadsfgadsasdfgdxgasdfgadrg
+    // Soft Shadowadsfgadsasdfgdxgasdfgadrgadfgasdfg
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.03,
