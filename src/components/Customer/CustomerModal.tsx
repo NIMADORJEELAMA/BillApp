@@ -237,6 +237,21 @@ const CustomerModal = ({
               <View style={styles.btnRow}>
                 <GradientButton
                   title="Cancel"
+                  colors={['#F3F4F6', '#E5E7EB']}
+                  onPress={() => {
+                    // If we are editing OR if we arrived here directly from the Customer Screen Add button
+                    // we should close the entire modal, not just switch to list view.
+                    if (initialData || !startWithList) {
+                      handleResetAndClose();
+                    } else {
+                      setViewMode('list');
+                    }
+                  }}
+                  textStyle={{color: '#374151'}}
+                  containerStyle={styles.btnSecondary}
+                />
+                {/* <GradientButton
+                  title="Cancel"
                   colors={['#F3F4F6', '#E5E7EB']} // Light gray gradient
                   onPress={() =>
                     initialData ? handleResetAndClose() : setViewMode('list')
@@ -244,7 +259,7 @@ const CustomerModal = ({
                   textStyle={{color: '#374151'}} // Darker text for contrast on gray
                   // disabled={isSubmitting} // Disable while the other button is loading
                   containerStyle={styles.btnSecondary} // Keep your layout flex
-                />
+                /> */}
                 <GradientButton
                   title={initialData ? 'Update' : 'Create & Select'}
                   onPress={handleSaveCustomer}

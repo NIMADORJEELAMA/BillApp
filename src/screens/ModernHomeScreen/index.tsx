@@ -24,8 +24,11 @@ import SalesChart from '../../components/Charts/SalesChart';
 import CustomTileButton from '../../components/CustomTileButton';
 import TinySquareButton from '../../components/Buttons/TinySquareButton';
 import SettingsIcon from '../../assets/Icons/settings.svg';
+
+import UsersIcon from '../../assets/Icons/users.svg';
 import SalesReportScreen from '../SalesReportScreen';
 import TimelineChart from '../../components/Charts/TimelineChart';
+import color from '../../assets/Color/color';
 
 const {width} = Dimensions.get('window');
 
@@ -185,7 +188,14 @@ const ModernHomeScreen = () => {
           <TinySquareButton
             title="Customers"
             onPress={() => navigation.navigate('CustomerScreen')}
-            icon={<SettingsIcon width={20} height={20} fill="#6366F1" />}
+            icon={
+              <UsersIcon
+                width={20}
+                height={20}
+                fill="#6366F1"
+                color={color.themeBlue}
+              />
+            }
           />
           <TinySquareButton
             title="Reports"
