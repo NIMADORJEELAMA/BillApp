@@ -252,7 +252,7 @@ const CustomerModal = ({
                 />
                 {/* <GradientButton
                   title="Cancel"
-                  colors={['#F3F4F6', '#E5E7EB']} // Light gray dfhadfsgdfgfdghfghsddfgj shfghdfghsdfgsdfg
+                  colors={['#F3F4F6', '#E5E7EB']} // Light gray dfhadfsgdfgfdghfghsddfgj dfgsdfgsdfhgdf
                   onPress={() =>
                     initialData ? handleResetAndClose() : setViewMode('list')
                   }
