@@ -252,7 +252,7 @@ const CustomerModal = ({
                 />
                 {/* <GradientButton
                   title="Cancel"
-                  colors={['#F3F4F6', '#E5E7EB']} // Light gray gradientsfgrdg
+                  colors={['#F3F4F6', '#E5E7EB']} // Light gray dfgjhdgh
                   onPress={() =>
                     initialData ? handleResetAndClose() : setViewMode('list')
                   }
