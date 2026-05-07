@@ -87,7 +87,7 @@ const SalesReportScreen = () => {
         <ActivityIndicator size="large" color="#fa2c37" />
       </View>
     );
-  //sdfgfdgfhgdfasdfgdfgdf
+  //sdfgfdgfhgdfasdfgdfgdffghdfgj
   return (
     <MainLayout
       title="Sales Analytics"
