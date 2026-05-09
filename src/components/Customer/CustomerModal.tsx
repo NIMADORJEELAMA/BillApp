@@ -258,7 +258,7 @@ const CustomerModal = ({
                   }
                   textStyle={{color: '#374151'}}  
                   // disabled={isSubmitting} //  
-                  containerStyle={styles.btnSecondary} // Keep your layout flex
+                  containerStyle={styles.btnSecondary}  
                 /> */}
                 <GradientButton
                   title={initialData ? 'Update' : 'Create & Select'}
