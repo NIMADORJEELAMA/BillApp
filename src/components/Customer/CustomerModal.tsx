@@ -257,7 +257,7 @@ const CustomerModal = ({
                     initialData ? handleResetAndClose() : setViewMode('list')
                   }
                   textStyle={{color: '#374151'}}  
-                  // disabled={isSubmitting} // Disable while the other button is loading
+                  // disabled={isSubmitting} //  
                   containerStyle={styles.btnSecondary} // Keep your layout flex
                 /> */}
                 <GradientButton
