@@ -256,7 +256,7 @@ const CustomerModal = ({
                   onPress={() =>
                     initialData ? handleResetAndClose() : setViewMode('list')
                   }
-                  textStyle={{color: '#374151'}} // Darker text for contrast on gray
+                  textStyle={{color: '#374151'}}  
                   // disabled={isSubmitting} // Disable while the other button is loading
                   containerStyle={styles.btnSecondary} // Keep your layout flex
                 /> */}
