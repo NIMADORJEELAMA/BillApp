@@ -267,7 +267,7 @@ const CustomerModal = ({
                   containerStyle={styles.btnPrimary}
                 />
                 {/* <TouchableOpacity
-                  style={styles.saveBtn}  asdfasdgfdgfgh
+                  style={styles.saveBtn}   
                   onPress={handleSaveCustomer}
                   disabled={isSaving}>
                   {isSaving ? (
