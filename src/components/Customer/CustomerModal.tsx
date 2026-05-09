@@ -263,7 +263,7 @@ const CustomerModal = ({
                 <GradientButton
                   title={initialData ? 'Update' : 'Create & Select'}
                   onPress={handleSaveCustomer}
-                  loading={isSaving} // Show spinner when true
+                  loading={isSaving} // Show spinner when true sdfgsdfg
                   containerStyle={styles.btnPrimary} // Keep your layout flex
                 />
                 {/* <TouchableOpacity
