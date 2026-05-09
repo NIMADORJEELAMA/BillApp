@@ -250,7 +250,7 @@ const CustomerModal = ({
                   textStyle={{color: '#374151'}}
                   containerStyle={styles.btnSecondary}
                 />
-                {/* <GradientButtonsdfsdf
+                {/* <GradientButtons 
                   title="Cancel"
                   colors={['#F3F4F6', '#E5E7EB']}  
                   onPress={() =>
