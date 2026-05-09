@@ -264,7 +264,7 @@ const CustomerModal = ({
                   title={initialData ? 'Update' : 'Create & Select'}
                   onPress={handleSaveCustomer}
                   loading={isSaving}
-                  containerStyle={styles.btnPrimary} // Keep your layout flex
+                  containerStyle={styles.btnPrimary}
                 />
                 {/* <TouchableOpacity
                   style={styles.saveBtn}
