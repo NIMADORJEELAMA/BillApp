@@ -257,7 +257,7 @@ const CustomerModal = ({
                     initialData ? handleResetAndClose() : setViewMode('list')
                   }
                   textStyle={{color: '#374151'}}  
-                  // disabled={isSubmitting}  //adsgfasdfsdf
+                  // disabled={isSubmitting}  //jhlkhjlhjk
                   containerStyle={styles.btnSecondary}  
                 /> */}
                 <GradientButton
