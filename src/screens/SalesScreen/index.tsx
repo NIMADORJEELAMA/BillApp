@@ -705,6 +705,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: '#fff',
     marginBottom: 12,
+    zIndex: 9999,
   },
   buttonGroup: {
     flexDirection: 'row',
