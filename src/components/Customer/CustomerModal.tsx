@@ -279,7 +279,7 @@ const CustomerModal = ({
                   )}
                 </TouchableOpacity> */}
 
-                {/* ajksdfksdsfghdasfgadsfgdfgsdfads */}
+                {/* ajksdfksdsfghdasfgadsfghdgfhggitsfgdfgsdfads */}
               </View>
             </View>
           </KeyboardAvoidingView>
