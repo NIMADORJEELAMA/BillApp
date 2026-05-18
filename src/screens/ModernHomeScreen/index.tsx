@@ -24,6 +24,8 @@ import SalesChart from '../../components/Charts/SalesChart';
 import CustomTileButton from '../../components/CustomTileButton';
 import TinySquareButton from '../../components/Buttons/TinySquareButton';
 import SettingsIcon from '../../assets/Icons/settings.svg';
+import ReportsIcon from '../../assets/Icons/report.svg';
+import StaffIcon from '../../assets/Icons/employee-svgrepo-com.svg';
 
 import UsersIcon from '../../assets/Icons/users.svg';
 import SalesReportScreen from '../SalesReportScreen';
@@ -49,12 +51,13 @@ const DASHBOARD_MENU = [
   },
   {
     id: '2',
-    title: 'Bulk Print',
-    subtitle: 'Print multiple labels',
-    image: require('../../assets/Icons/printerthermal.png'),
-    screen: 'BulkPrintScreen',
+    title: 'Sales History',
+    subtitle: 'View sales history',
+    image: require('../../../src/assets/Icons/sales-report.webp'),
+    screen: 'SalesListScreen',
     color: '#EEF2FF',
   },
+
   {
     id: '3',
     title: 'Bulk Upload',
@@ -65,28 +68,28 @@ const DASHBOARD_MENU = [
   },
   {
     id: '4',
-    title: 'Sales History',
-    subtitle: 'View sales history',
-    image: require('../../../src/assets/Icons/sales-report.webp'),
-    screen: 'SalesListScreen',
+    title: 'Bulk Print',
+    subtitle: 'Print multiple labels',
+    image: require('../../assets/Icons/printerthermal.png'),
+    screen: 'BulkPrintScreen',
     color: '#EEF2FF',
   },
-  {
-    id: '5',
-    title: 'Sales Report',
-    subtitle: 'View sales report',
-    image: require('../../../src/assets/Icons/sales-report.webp'),
-    screen: 'SalesReportScreen',
-    color: '#EEF2FF',
-  },
-  {
-    id: '6',
-    title: 'Sales Report',
-    subtitle: 'View sales report',
-    image: require('../../../src/assets/Icons/sales-report.webp'),
-    screen: 'SalesReportScreen',
-    color: '#EEF2FF',
-  },
+  // {
+  //   id: '5',
+  //   title: 'Sales History',
+  //   subtitle: 'View sales history',
+  //   image: require('../../../src/assets/Icons/sales-report.webp'),
+  //   screen: 'SalesListScreen',
+  //   color: '#EEF2FF',
+  // },
+  // {
+  //   id: '6',
+  //   title: 'Sales Report',
+  //   subtitle: 'View sales report',
+  //   image: require('../../../src/assets/Icons/sales-report.webp'),
+  //   screen: 'SalesReportScreen',
+  //   color: '#EEF2FF',
+  // },
 ];
 //asdfasdfadsgasdgasdfgasdfg
 const ModernHomeScreen = () => {
@@ -190,22 +193,42 @@ const ModernHomeScreen = () => {
             onPress={() => navigation.navigate('CustomerScreen')}
             icon={
               <UsersIcon
-                width={20}
-                height={20}
+                width={24}
+                height={24}
                 fill="#6366F1"
                 color={color.themeBlue}
+                // stroke={color.black}
+                strokeWidth={2}
               />
             }
           />
           <TinySquareButton
             title="Reports"
-            onPress={() => {}}
-            icon={<SettingsIcon width={20} height={20} fill="#F59E0B" />}
+            onPress={() => navigation.navigate('SalesReportScreen')}
+            icon={
+              <ReportsIcon
+                width={24}
+                height={24}
+                // fill={color.green}
+                color={color.dark}
+                // stroke={color.dark}
+                strokeWidth={2}
+              />
+            }
           />
           <TinySquareButton
-            title="Profile"
-            onPress={() => {}}
-            icon={<SettingsIcon width={20} height={20} fill="#10B981" />}
+            title="Staff"
+            onPress={() => navigation.navigate('Staff')}
+            icon={
+              <StaffIcon
+                width={24}
+                height={24}
+                fill="#10B981"
+                color={color.dark}
+                stroke={color.dark}
+                strokeWidth={2}
+              />
+            }
           />
           <TinySquareButton
             title="Help"

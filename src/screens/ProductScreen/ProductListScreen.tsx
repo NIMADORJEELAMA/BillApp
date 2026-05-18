@@ -15,6 +15,11 @@ import MainLayout from '../../../src/screens/MainLayout';
 import axiosInstance from '../../services/axiosInstance';
 import Toast from 'react-native-toast-message';
 import ProductFormModal from './ProductFormModal';
+import GradientButton from '../../components/Buttons/GradientButton';
+import SearchBar from '../../components/Searchbar';
+import EditIcon from '../../assets/Icons/edit (1).svg';
+import DeleteIcon from '../../assets/Icons/trash.svg';
+import color from '../../assets/Color/color';
 
 // 1. Separate Row Component with React.memo to prevent unnecessary re-renders
 const ProductRow = React.memo(({item, index, onEdit, onDelete}: any) => {
@@ -58,13 +63,32 @@ const ProductRow = React.memo(({item, index, onEdit, onDelete}: any) => {
 
       <View style={styles.colAction}>
         <TouchableOpacity onPress={() => onEdit(item)}>
-          <Text style={styles.editActionText}>EDIT</Text>
+          <EditIcon
+            height={24}
+            width={24}
+            fill={color.themeBlue}
+            // stroke={color.themeBlue}
+            color={color.themeBlue}
+            // strokeWidth="1"
+            // strokeLinecap="round"
+            // strokeLinejoin="round"
+          />
+          {/* <Text style={styles.editActionText}>EDIT</Text> */}
         </TouchableOpacity>
       </View>
 
       <View style={styles.colAction}>
         <TouchableOpacity onPress={() => onDelete(item.id, item.name)}>
-          <Text style={styles.deleteActionText}>DEL</Text>
+          <DeleteIcon
+            height={24}
+            width={24}
+            fill={color.red}
+            // stroke={color.red}
+            color={color.red}
+            // strokeWidth="1"
+            // strokeLinecap="round"
+            // strokeLinejoin="round"
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -163,20 +187,23 @@ export default function ProductListScreen({navigation}: any) {
     <MainLayout title="Inventory" showBack>
       <View style={styles.container}>
         <View style={styles.topBar}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search name or barcode..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <TouchableOpacity
-            style={styles.addBtn}
+          <View style={{flex: 0.8}}>
+            <SearchBar
+              placeholder="Search name or barcode..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          <GradientButton
+            title={'ADD'}
             onPress={() => {
               setSelectedProduct(null);
               setModalVisible(true);
-            }}>
-            <Text style={styles.addBtnText}>+ NEW</Text>
-          </TouchableOpacity>
+            }}
+            //  loading={isSaving}
+            containerStyle={styles.btnPrimary}
+          />
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={true}>
@@ -286,13 +313,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#cbd5e1',
   },
-  addBtn: {
-    backgroundColor: '#0f172a',
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
+  btnPrimary: {
+    flex: 0.2,
   },
-  addBtnText: {color: '#fff', fontWeight: 'bold'},
+
   gridHeader: {
     flexDirection: 'row',
     paddingHorizontal: 16,

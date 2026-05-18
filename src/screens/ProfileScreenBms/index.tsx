@@ -7,6 +7,7 @@ import ProfileIcon from '../../assets/Icons/profile.svg';
 import GlassButton from '../../components/GlassButton/GlassButton';
 import useLogout from '../../hooks/useLogout';
 import color from '../../assets/Color/color';
+import GradientButton from '../../components/Buttons/GradientButton';
 
 const ProfileScreen = () => {
   // Grab user data from Redux
@@ -51,14 +52,20 @@ const ProfileScreen = () => {
 
         {/* System Status */}
 
-        <View>
-          <GlassButton
+        <View style={{marginTop: 30}}>
+          <GradientButton
+            title={'Log Out'}
+            onPress={handleLogout}
+            // loading={isSaving}
+            containerStyle={styles.btnPrimary}
+          />
+          {/* <GlassButton
             text="Log Out"
             onPress={handleLogout}
             style={{marginTop: 16}}
             glassColor="dark"
             width={'100%'}
-          />
+          /> */}
         </View>
         <Div style={styles.statusBox}>
           <ProfileIcon width={18} height={18} fill="#10B981" />
@@ -76,7 +83,7 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: color.dark, // Match your login button
+    backgroundColor: color.themeBlue, // Match your login button
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,

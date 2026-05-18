@@ -363,7 +363,7 @@ const TabNavigator: React.FC = () => {
       {role == 'ADMIN' && (
         <Tab.Screen
           name="Settings"
-          component={ProfileScreen}
+          component={ProfileScreenBms}
           options={{
             headerShown: false,
             tabBarButton: (props: any) => {
