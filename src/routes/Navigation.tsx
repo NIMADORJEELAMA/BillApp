@@ -86,6 +86,7 @@ export type RootStackParamList = {
   OrderPage: undefined;
   CartScreen: undefined;
   SalesScreen: undefined;
+  SalesListScreen: undefined;
   BulkProductScreen: undefined;
   BulkPrintScreen: undefined;
   CustomerScreen: undefined;
@@ -123,6 +124,7 @@ export type BottomTabParamList = {
   ProductScreen: undefined;
   ProductListScreen: undefined;
   SalesScreen: undefined;
+  SalesListScreen: undefined;
   ProfileScreen: undefined;
   Settings: undefined;
   Profile: undefined;
@@ -140,7 +142,8 @@ const TabNavigator: React.FC = () => {
   const user = useSelector((state: any) => state.auth.user);
   console.log('user', user);
   const role = user?.role;
-  const initialRoute = role === 'KITCHEN' ? 'KitchenSelection' : 'HomeScreen';
+  const initialRoute =
+    role === 'KITCHEN' ? 'KitchenSelection' : 'ModernHomeScreen';
 
   return (
     <Tab.Navigator
@@ -167,7 +170,7 @@ const TabNavigator: React.FC = () => {
         tabBarActiveTintColor: '#fff',
         tabBarInactiveTintColor: '#fed4d7',
       }}>
-      {role !== 'KITCHEN' && (
+      {/* {role !== 'KITCHEN' && (
         <Tab.Screen
           name="HomeScreen"
           component={SalesListScreen}
@@ -197,7 +200,7 @@ const TabNavigator: React.FC = () => {
             },
           }}
         />
-      )}
+      )} */}
       {role !== 'KITCHEN' && (
         <Tab.Screen
           name="ModernHomeScreen"
@@ -434,6 +437,8 @@ const Navigation = () => {
           <Stack.Screen name="OrderPage" component={OrderPage} />
           <Stack.Screen name="CartScreen" component={CartScreen} />
           <Stack.Screen name="SalesScreen" component={SalesScreen} />
+          <Stack.Screen name="SalesListScreen" component={SalesListScreen} />
+
           <Stack.Screen
             name="BulkProductScreen"
             component={BulkProductScreen}

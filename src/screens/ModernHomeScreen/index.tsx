@@ -65,10 +65,10 @@ const DASHBOARD_MENU = [
   },
   {
     id: '4',
-    title: 'Sales Report',
-    subtitle: 'View sales report',
+    title: 'Sales History',
+    subtitle: 'View sales history',
     image: require('../../../src/assets/Icons/sales-report.webp'),
-    screen: 'SalesReportScreen',
+    screen: 'SalesListScreen',
     color: '#EEF2FF',
   },
   {

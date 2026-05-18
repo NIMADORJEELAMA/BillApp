@@ -30,6 +30,7 @@ const SearchBar = ({
         width={18}
         height={18}
         stroke="#94A3B8"
+        strokeWidth={4}
         style={styles.searchIcon}
       />
 

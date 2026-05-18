@@ -8,6 +8,7 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
+import GradientButton from '../Buttons/GradientButton';
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -30,9 +31,6 @@ const ReceiptViewModal: React.FC<ReceiptModalProps> = ({
     <Modal visible={isVisible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.billModal}>
-          {/* Header */}
-          {/* Header */}
-
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Order Receipt</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -143,11 +141,12 @@ const ReceiptViewModal: React.FC<ReceiptModalProps> = ({
               </View>
             </View>
           </ScrollView>
-
-          {/* Action Button */}
-          <TouchableOpacity style={styles.printBtn} onPress={onPrint}>
-            <Text style={styles.printBtnText}>PRINT INVOICE</Text>
-          </TouchableOpacity>
+          <GradientButton
+            title={'PRINT INVOICE'}
+            onPress={onPrint}
+            // loading={isSaving}
+            containerStyle={styles.btnPrimary}
+          />
         </View>
       </View>
     </Modal>
@@ -252,6 +251,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
+  },
+  btnPrimary: {
+    flex: 0,
   },
   printBtnText: {color: '#fff', fontWeight: '800', fontSize: 16},
 });

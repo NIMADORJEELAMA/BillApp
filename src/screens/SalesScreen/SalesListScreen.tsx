@@ -6,9 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Modal,
-  ScrollView,
-  TextInput,
   Platform,
   ActivityIndicator,
 } from 'react-native';
@@ -18,87 +15,131 @@ import axiosInstance from '../../services/axiosInstance';
 import {connectAndPrint} from '../../services/PrinterService';
 import Toast from 'react-native-toast-message';
 import ReceiptViewModal from '../../components/Printer/ReceiptViewModal';
+import DateRangePicker from '../../components/Calendar/CustomCalendarPicker';
+import SearchBar from '../../components/Searchbar';
+import CalendarIcon from '../../assets/Icons/calendar-week.svg';
+import color from '../../assets/Color/color';
 
-// Move static components outside to prevent re-creation
+// Static layout component declared globally to prevent unnecessary mounting/re-creations
 const ListEmptyComponent = () => (
   <View style={styles.emptyState}>
     <Text style={styles.emptyText}>No matching sales found</Text>
   </View>
 );
 
+// Reusable Custom Debounce Hook
+function useDebounce(value: any, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// Optimized, Modern Card Item Component using React.memo
+const SaleItem = React.memo(({item, onPress}: any) => {
+  const isCash = item.paymentMode === 'CASH';
+  const isUpi = item.paymentMode === 'UPI' || item.paymentMode === 'ONLINE';
+  const date = new Date(item.createdAt);
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.6}
+      onPress={() => onPress(item)}
+      style={styles.saleCard}>
+      <View style={styles.cardMain}>
+        <View style={styles.cardLeftContent}>
+          <Text style={styles.billNumber}>Bill #{item.billNumber}</Text>
+          <Text style={styles.cashierName}>
+            By {item.user?.name || 'Admin'}
+          </Text>
+          <Text style={styles.dateText}>
+            {date.toLocaleDateString()} •{' '}
+            {date.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
+        </View>
+
+        <View style={styles.cardRightContent}>
+          <Text style={styles.finalAmt}>
+            ₹{parseFloat(item.finalAmount || 0).toFixed(2)}
+          </Text>
+
+          <View
+            style={[
+              styles.payBadge,
+              {
+                backgroundColor: isCash
+                  ? '#F0F9FF' // Soft light blue
+                  : isUpi
+                  ? '#F0FDF4' // Soft mint green
+                  : '#F5F5F5', // Soft gray
+              },
+            ]}>
+            <Text
+              style={[
+                styles.payText,
+                {
+                  color: isCash ? '#0284C7' : isUpi ? '#16A34A' : '#525252',
+                },
+              ]}>
+              {item.paymentMode}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 export default function SalesListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sales, setSales] = useState<any[]>([]);
-  console.log('sales', sales);
 
-  // Filter States
+  // Filter Management States
   const [searchQuery, setSearchQuery] = useState('');
-  console.log('searchQuery', searchQuery);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState<'start' | 'end' | null>(null);
-
+  const [calendarVisible, setCalendarVisible] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
-  console.log('selectedSale', selectedSale);
 
-  // 1. Single Source of Truth: Fetch from API
-  // const fetchSales = useCallback(
-  //   async (showSpinner = true) => {
-  //     try {
-  //       if (showSpinner) setLoading(true);
+  // Apply Predefined Default Range: Last 7 Days
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
 
-  //       const params = {
-  //         ...(searchQuery && {search: searchQuery}),
-  //         ...(startDate && {startDate: startDate.toISOString()}),
-  //         ...(endDate && {endDate: endDate.toISOString()}),
-  //       };
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(today.getDate() - 7);
+    oneWeekAgo.setHours(0, 0, 0, 0);
 
-  //       const response = await axiosInstance.get('/sales', {params});
-  //       setSales(Array.isArray(response.data) ? response.data : []);
-  //     } catch (error) {
-  //       Toast.show({type: 'error', text1: 'Failed to load sales'});
-  //     } finally {
-  //       setLoading(false);
-  //       setRefreshing(false);
-  //     }
-  //   },
-  //   [searchQuery, startDate, endDate],
-  // );
+    setStartDate(oneWeekAgo);
+    setEndDate(today);
+  }, []);
 
-  // 2. Debounced Effect
-  // useEffect(() => {
-  //   const handler = setTimeout(() => fetchSales(true), 500);
-  //   return () => clearTimeout(handler);
-  // }, [fetchSales]);
-  function useDebounce(value: any, delay: number) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setDebouncedValue(value);
-      }, delay);
-
-      return () => clearTimeout(handler);
-    }, [value, delay]);
-
-    return debouncedValue;
-  }
   const debouncedSearch = useDebounce(searchQuery, 400);
   const debouncedStartDate = useDebounce(startDate, 400);
   const debouncedEndDate = useDebounce(endDate, 400);
+
+  // Structural parameters for API Filtering
   const filters = useMemo(() => {
     return {
       ...(debouncedSearch && {search: debouncedSearch}),
-      ...(debouncedStartDate && {
-        startDate: debouncedStartDate.toISOString(),
-      }),
-      ...(debouncedEndDate && {
-        endDate: debouncedEndDate.toISOString(),
-      }),
+      ...(debouncedStartDate && {startDate: debouncedStartDate.toISOString()}),
+      ...(debouncedEndDate && {endDate: debouncedEndDate.toISOString()}),
     };
   }, [debouncedSearch, debouncedStartDate, debouncedEndDate]);
+
   const fetchSales = useCallback(
     async (showSpinner = true) => {
       try {
@@ -107,7 +148,6 @@ export default function SalesListScreen() {
         const response = await axiosInstance.get('/sales', {
           params: filters,
         });
-        console.log('API CALL', filters);
 
         setSales(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
@@ -119,22 +159,20 @@ export default function SalesListScreen() {
     },
     [filters],
   );
-  console.log('fetchSales', fetchSales);
+
   useEffect(() => {
     fetchSales(true);
   }, [fetchSales]);
-  useEffect(() => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999); // end of day
 
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(today.getDate() - 7);
-    oneWeekAgo.setHours(0, 0, 0, 0); // start of day
+  const formatDisplayDate = (date: Date | null): string => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
 
-    setStartDate(oneWeekAgo);
-    setEndDate(today);
-  }, []);
-  // 3. Optimized Handlers
   const onDateChange = useCallback(
     (event: any, selectedDate?: Date) => {
       if (Platform.OS === 'android') setShowPicker(null);
@@ -154,24 +192,14 @@ export default function SalesListScreen() {
   const handlePrintFromModal = useCallback(async () => {
     if (!selectedSale) return;
     try {
-      const printItems = selectedSale.items.map((i: any) => ({
-        name: i.product?.name || 'Product',
-        quantity: i.quantity,
-        price: parseFloat(i.price),
-      }));
       connectAndPrint(selectedSale);
-      // await connectAndPrint(
-      //   printItems,
-      //   parseFloat(selectedSale.totalAmount),
-      //   parseFloat(selectedSale.discount),
-      //   parseFloat(selectedSale.finalAmount),
-      // );
       Toast.show({type: 'success', text1: 'Printing Receipt...'});
     } catch (error) {
       Toast.show({type: 'error', text1: 'Print failed. Check connection.'});
     }
   }, [selectedSale]);
-  //asdgsdfg
+
+  // Aggregate Metrics Summary
   const stats = useMemo(() => {
     return sales.reduce(
       (acc, curr) => {
@@ -183,47 +211,6 @@ export default function SalesListScreen() {
     );
   }, [sales]);
 
-  const SaleItem = React.memo(({item, onPress}: any) => {
-    const isCash = item.paymentMode === 'CASH';
-    const date = new Date(item.createdAt);
-
-    return (
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={() => onPress(item)}
-        style={styles.saleCard}>
-        <View style={styles.cardMain}>
-          <View>
-            <Text style={styles.billNumber}>Bill #{item.billNumber}</Text>
-            <Text style={styles.cashierName}>
-              By {item.user?.name || 'Admin'}
-            </Text>
-            <Text style={styles.dateText}>
-              {date.toLocaleDateString()} •{' '}
-              {date.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
-          </View>
-
-          <View style={{alignItems: 'flex-end'}}>
-            <Text style={styles.finalAmt}>
-              ₹{parseFloat(item.finalAmount).toFixed(2)}
-            </Text>
-
-            <View
-              style={[
-                styles.payBadge,
-                {backgroundColor: isCash ? '#E0F2FE' : '#DCFCE7'},
-              ]}>
-              <Text style={styles.payText}>{item.paymentMode}</Text>
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  });
   const renderSaleItem = useCallback(
     ({item}: {item: any}) => {
       return <SaleItem item={item} onPress={openBill} />;
@@ -234,27 +221,36 @@ export default function SalesListScreen() {
   return (
     <MainLayout title="Sales History" showBack>
       <View style={styles.container}>
+        {/* Header Content with Filter Controls */}
         <View style={styles.headerFilter}>
-          <TextInput
-            style={styles.searchInput}
+          <SearchBar
             placeholder="Search Bill # or Cashier..."
-            placeholderTextColor="#94a3b8"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            clearButtonMode="while-editing"
           />
 
           <View style={styles.dateRangeContainer}>
-            <DateButton
-              label="FROM"
-              date={startDate}
-              onPress={() => setShowPicker('start')}
-            />
-            <DateButton
-              label="TO"
-              date={endDate}
-              onPress={() => setShowPicker('end')}
-            />
+            <TouchableOpacity
+              style={styles.calendarIconBtn}
+              onPress={() => setCalendarVisible(true)}>
+              <View style={styles.pickerContent}>
+                <CalendarIcon
+                  width={20}
+                  height={20}
+                  stroke={color.grey || '#64748B'}
+                  strokeWidth={2}
+                />
+                <Text style={styles.dateText}>
+                  {startDate && endDate
+                    ? `${formatDisplayDate(startDate)}  –  ${formatDisplayDate(
+                        endDate,
+                      )}`
+                    : startDate
+                    ? `${formatDisplayDate(startDate)}`
+                    : 'Select Date Range'}
+                </Text>
+              </View>
+            </TouchableOpacity>
 
             {(startDate || endDate) && (
               <TouchableOpacity
@@ -268,10 +264,18 @@ export default function SalesListScreen() {
             )}
           </View>
 
+          {/* Quick Stats Metric Bar */}
           <View style={styles.statsRow}>
             <Text style={styles.statsText}>Showing {stats.count} bills</Text>
             <Text style={styles.totalRevenue}>
-              Total: ₹{stats.total.toLocaleString()}
+              Total:{' '}
+              <Text style={styles.revenueAmount}>
+                ₹
+                {stats.total.toLocaleString('en-IN', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Text>
             </Text>
           </View>
         </View>
@@ -285,180 +289,206 @@ export default function SalesListScreen() {
           />
         )}
 
+        <DateRangePicker
+          visible={calendarVisible}
+          onClose={() => setCalendarVisible(false)}
+          initialStartDate={startDate}
+          initialEndDate={endDate}
+          onApply={(start, end) => {
+            setStartDate(start);
+            setEndDate(end);
+          }}
+        />
+
+        {/* Sales Dynamic List Layer */}
         <FlatList
           data={sales}
-          keyExtractor={item => item.id}
+          keyExtractor={item =>
+            item.id?.toString() || item.billNumber?.toString()
+          }
           renderItem={renderSaleItem}
           contentContainerStyle={styles.listPadding}
           initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          removeClippedSubviews={true}
+          maxToRenderPerBatch={12}
+          removeClippedSubviews={Platform.OS === 'android'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => fetchSales(false)}
+              tintColor="#2563EB"
+              colors={['#2563EB']}
             />
           }
           ListEmptyComponent={
             loading ? (
-              <ActivityIndicator style={{marginTop: 20}} />
+              <ActivityIndicator
+                size="small"
+                color="#2563EB"
+                style={{marginTop: 32}}
+              />
             ) : (
               ListEmptyComponent
             )
           }
         />
-
-        <ReceiptViewModal
-          isVisible={viewModalVisible}
-          onClose={() => setViewModalVisible(false)}
-          sale={selectedSale}
-          onPrint={handlePrintFromModal}
-        />
       </View>
+      <ReceiptViewModal
+        isVisible={viewModalVisible}
+        onClose={() => setViewModalVisible(false)}
+        sale={selectedSale}
+        onPrint={handlePrintFromModal}
+      />
     </MainLayout>
   );
 }
 
-// Sub-component for Date Buttons
-const DateButton = ({label, date, onPress}: any) => (
-  <TouchableOpacity style={styles.dateBtn} onPress={onPress}>
-    <Text style={styles.dateBtnLabel}>{label}</Text>
-    <Text style={styles.dateBtnValue}>
-      {date ? date.toLocaleDateString() : 'Select'}
-    </Text>
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F8FAFC'},
-  headerFilter: {
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  searchInput: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 45,
-    fontSize: 14,
-    color: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 12,
-  },
-  dateRangeContainer: {flexDirection: 'row', alignItems: 'center', gap: 8},
-  dateBtn: {
+  container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 8,
-    alignItems: 'center',
   },
-  dateBtnLabel: {fontSize: 9, fontWeight: '800', color: '#94A3B8'},
-  dateBtnValue: {fontSize: 13, fontWeight: '600', color: '#1E293B'},
-  resetBtn: {
+  headerFilter: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    elevation: 2,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+  },
+  dateRangeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F1F5F9',
-    width: 35,
-    height: 35,
-    borderRadius: 8,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 46,
+    width: '100%',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  calendarIconBtn: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  pickerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dateText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#334155',
+  },
+  resetBtn: {
+    paddingLeft: 10,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  resetBtnText: {color: '#64748B', fontWeight: 'bold'},
+  resetBtnText: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 14,
     alignItems: 'center',
   },
-  statsText: {fontSize: 12, color: '#64748B', fontWeight: '600'},
-  totalRevenue: {fontSize: 14, fontWeight: '800', color: '#2563EB'},
-  listPadding: {padding: 12},
-  saleCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+  statsText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  totalRevenue: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  revenueAmount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  listPadding: {
     padding: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    paddingBottom: 32,
+  },
+  saleCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   cardMain: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  billNumber: {fontSize: 15, fontWeight: 'bold', color: '#0F172A'},
-  cashierName: {fontSize: 12, color: '#64748B', marginVertical: 2},
-  dateText: {fontSize: 11, color: '#94A3B8'},
-  finalAmt: {fontSize: 18, fontWeight: '900', color: '#0F172A'},
-  payBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 5,
-    marginTop: 5,
-  },
-  payText: {fontSize: 10, fontWeight: 'bold', color: '#1E293B'},
-  emptyState: {alignItems: 'center', marginTop: 50},
-  emptyText: {color: '#94A3B8'},
-  modalOverlay: {
+  cardLeftContent: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
   },
-  billModal: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: '80%',
-    padding: 20,
+  cardRightContent: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingLeft: 12,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+  billNumber: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 2,
   },
-  modalTitle: {fontSize: 18, fontWeight: 'bold'},
-  closeX: {fontSize: 22, color: '#94A3B8'},
-  receiptHeader: {alignItems: 'center', marginBottom: 15},
-  storeName: {fontSize: 18, fontWeight: '900'},
-  receiptMeta: {fontSize: 12, color: '#64748B'},
-  divider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    borderStyle: 'dashed',
-    borderWidth: 1,
-    borderRadius: 1,
+  cashierName: {
+    fontSize: 13,
+    color: '#475569',
+    marginBottom: 6,
   },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 15,
+  dateTextComponent: {
+    fontSize: 11,
+    color: '#94A3B8',
   },
-  productName: {fontSize: 14, fontWeight: '700', color: '#1E293B'},
-  productSub: {fontSize: 12, color: '#94A3B8'},
-  itemTotal: {fontSize: 14, fontWeight: 'bold'},
-  rowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
+  finalAmt: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    letterSpacing: -0.3,
   },
-  grandLabel: {fontSize: 16, fontWeight: 'bold'},
-  grandPrice: {fontSize: 22, fontWeight: '900', color: '#2563EB'},
-  printBtn: {
-    backgroundColor: '#1E293B',
-    padding: 16,
-    borderRadius: 12,
+  payBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 8,
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
   },
-  printBtnText: {color: '#FFF', fontWeight: 'bold', fontSize: 16},
+  payText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 64,
+  },
+  emptyText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '500',
+  },
 });
