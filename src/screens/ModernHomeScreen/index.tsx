@@ -157,7 +157,7 @@ const ModernHomeScreen = () => {
         <TimelineChart />
       </Animated.View>
 
-      {/* 🟢 SECTION 3: SCROLL (TOP LAYER - SAME LEVEL AS HEADER) */}
+      {/* 🟢 SECTION 3: SCROLL (TOP LAYER - SAME LEVEL AsdfgsdfgS HEADER) */}
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scroll}
