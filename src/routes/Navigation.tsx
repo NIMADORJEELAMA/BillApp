@@ -70,6 +70,9 @@ import BulkPrintScreen from '../screens/BulkPrintScreen';
 import ImagePrintScreen from '../components/Printer/ImagePrintScreen';
 import CustomerScreen from '../screens/Customer/CustomerScreen';
 import SalesReportScreen from '../screens/SalesReportScreen';
+import SupplierScreen from '../screens/Supplier/SupplierScreen';
+import CreatePurchaseScreen from '../screens/Purchase/CreatePurchaseScreen';
+import SupplierDetailsScreen from '../screens/Supplier/SupplierDetailsScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -106,6 +109,9 @@ export type RootStackParamList = {
   HelpCenter: undefined;
   ProfileScreenBms: undefined;
   Staff: undefined;
+  Supplier: undefined;
+  SupplierDetails: undefined;
+  Purchase: undefined;
   NotificationSettings: undefined;
 };
 
@@ -459,6 +465,13 @@ const Navigation = () => {
           <Stack.Screen name="HelpCenter" component={HelpCenter} />
           <Stack.Screen name="ProfileScreenBms" component={ProfileScreenBms} />
           <Stack.Screen name="Staff" component={StaffScreen} />
+          <Stack.Screen name="Supplier" component={SupplierScreen} />
+          <Stack.Screen
+            name="SupplierDetails"
+            component={SupplierDetailsScreen}
+          />
+
+          <Stack.Screen name="Purchase" component={CreatePurchaseScreen} />
 
           <Stack.Screen
             name="NotificationSettings"

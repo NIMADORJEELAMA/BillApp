@@ -23,12 +23,14 @@ import {useAnimatedRef, scrollTo} from 'react-native-reanimated';
 import SalesChart from '../../components/Charts/SalesChart';
 import CustomTileButton from '../../components/CustomTileButton';
 import TinySquareButton from '../../components/Buttons/TinySquareButton';
-import SettingsIcon from '../../assets/Icons/settings.svg';
+
+import SupplierIcon from '../../assets/Icons/truck (1).svg';
+import PurchaseIcon from '../../assets/Icons/package.svg';
 import ReportsIcon from '../../assets/Icons/report.svg';
 import StaffIcon from '../../assets/Icons/employee-svgrepo-com.svg';
 
 import UsersIcon from '../../assets/Icons/users.svg';
-import SalesReportScreen from '../SalesReportScreen';
+
 import TimelineChart from '../../components/Charts/TimelineChart';
 import color from '../../assets/Color/color';
 
@@ -195,9 +197,9 @@ const ModernHomeScreen = () => {
               <UsersIcon
                 width={24}
                 height={24}
-                fill="#6366F1"
-                color={color.themeBlue}
-                // stroke={color.black}
+                //  fill="#6366F1"
+                //color={color.themeBlue}
+                stroke={color.black}
                 strokeWidth={2}
               />
             }
@@ -223,17 +225,38 @@ const ModernHomeScreen = () => {
               <StaffIcon
                 width={24}
                 height={24}
-                fill="#10B981"
+                //  fill="#10B981"
                 color={color.dark}
+                stroke={color.dark}
+                strokeWidth={7}
+              />
+            }
+          />
+          <TinySquareButton
+            title="Supplier"
+            onPress={() => navigation.navigate('Supplier')}
+            icon={
+              <SupplierIcon
+                width={24}
+                height={24}
+                //  fill="#EF4444"
                 stroke={color.dark}
                 strokeWidth={2}
               />
             }
           />
           <TinySquareButton
-            title="Help"
-            onPress={() => {}}
-            icon={<SettingsIcon width={20} height={20} fill="#EF4444" />}
+            title="Purchase"
+            onPress={() => navigation.navigate('Purchase')}
+            icon={
+              <PurchaseIcon
+                width={24}
+                height={24}
+                // fill="#EF4444"
+                stroke={color.dark}
+                strokeWidth={2}
+              />
+            }
           />
         </View>
         <SalesChart />

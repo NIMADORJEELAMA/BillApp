@@ -24,7 +24,7 @@ const StaffModal = ({
     name: '',
     email: '',
     password: '',
-    role: 'WAITER',
+    role: 'STAFF',
     isActive: true,
   });
 
@@ -34,7 +34,7 @@ const StaffModal = ({
         name: editingUser.name || '',
         email: editingUser.email || '',
         password: '',
-        role: editingUser.role || 'WAITER',
+        role: editingUser.role || 'STAFF',
         isActive: editingUser.isActive ?? true,
       });
     } else {
@@ -42,16 +42,14 @@ const StaffModal = ({
         name: '',
         email: '',
         password: '',
-        role: 'WAITER',
+        role: 'STAFF',
         isActive: true,
       });
     }
   }, [editingUser, isOpen]);
   const ROLES = [
-    {label: 'Waiter', value: 'WAITER'},
+    {label: 'Staff', value: 'STAFF'},
     {label: 'Admin', value: 'ADMIN'},
-    {label: 'Front Office', value: 'FRONT_OFFICE'},
-    {label: 'Kitchen', value: 'KITCHEN'},
   ];
   const [isRolePickerOpen, setIsRolePickerOpen] = useState(false);
   const handleChange = (field, value) => {
