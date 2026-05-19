@@ -69,7 +69,7 @@ const CreatePurchaseScreen = ({navigation}) => {
       // ✅ Use data.items instead of data.data
       setSearchResults(data.items || []);
     } catch (error) {
-      console.log('Search Error:', error); // Add this temporarily so you can see if it failsv sdfghsfd
+      console.log('Search Error:', error); // Add this temporarily so you can see if it failsv sdfghsfdasdsdfg
     } finally {
       setIsSearching(false);
     }
