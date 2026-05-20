@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import axiosInstance from '../../services/axiosInstance';
 import {useSelector} from 'react-redux';
+import RefreshIcon from '../../assets/Icons/refresh-dot.svg';
+import color from '../../assets/Color/color';
 
 const {width} = Dimensions.get('window');
 const PADDING = 20;
@@ -117,16 +119,30 @@ const SalesChart = () => {
 
       {/* Top Products Horizontal Bars */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Top Products</Text>
-        <TouchableOpacity
-          onPress={() => fetchReportData(true)}
-          style={styles.refreshBadge}>
-          {refreshing ? (
-            <ActivityIndicator size="small" color="#6366F1" />
-          ) : (
-            <Text style={styles.refreshText}>Refresh</Text>
-          )}
-        </TouchableOpacity>
+        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+          <View>
+            <Text style={styles.sectionTitle}>Top Products</Text>
+          </View>
+          <View>
+            <TouchableOpacity
+              onPress={() => fetchReportData(true)}
+              style={styles.refreshBadge}>
+              {refreshing ? (
+                <ActivityIndicator size="small" color="#6366F1" />
+              ) : (
+                <RefreshIcon
+                  width={16}
+                  height={16}
+                  // fill={color.themeBlue}
+                  stroke={color.themeBlue}
+                  strokeWidth={2} // Increase this for bolder lines
+                />
+                // <Text style={styles.refreshText}>Refresh</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {topProducts?.map((item: any, index: number) => (
           <View key={index} style={styles.productRow}>
             <View style={styles.productInfo}>

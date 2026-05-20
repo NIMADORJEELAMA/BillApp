@@ -16,6 +16,7 @@ import SearchIcon from '../../assets/Icons/search.svg'; // Adjust path
 import PrinterIcon from '../../assets/Icons/printersvg.svg'; // Adjust path
 import swiggyColors from '../../assets/Color/swiggyColor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import GradientButton from '../../components/Buttons/GradientButton';
 
 const PrinterSettings = () => {
   const [printers, setPrinters] = useState([]);
@@ -165,7 +166,13 @@ const PrinterSettings = () => {
   return (
     <MainLayout title="Printer Settings" subtitle="Configure Bluetooth KOT">
       <View style={styles.container}>
-        <TouchableOpacity
+        <GradientButton
+          title={loading ? 'Searching...' : 'Scan for Printers'}
+          onPress={scanPrinters}
+          // loading={loading}
+          containerStyle={styles.btnPrimary}
+        />
+        {/* <TouchableOpacity
           style={styles.scanBtn}
           onPress={scanPrinters}
           disabled={loading}>
@@ -179,7 +186,7 @@ const PrinterSettings = () => {
           <Text style={styles.btnText}>
             {loading ? 'Searching...' : 'Scan for Printers'}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <FlatList
           data={printers}
@@ -220,6 +227,9 @@ const PrinterSettings = () => {
 
 const styles = StyleSheet.create({
   container: {flex: 1, padding: 20},
+  btnPrimary: {
+    marginBottom: 20,
+  },
   scanBtn: {
     backgroundColor: '#1e293b',
     padding: 15,

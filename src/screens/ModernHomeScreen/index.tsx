@@ -33,6 +33,8 @@ import UsersIcon from '../../assets/Icons/users.svg';
 
 import TimelineChart from '../../components/Charts/TimelineChart';
 import color from '../../assets/Color/color';
+import SearchComponent from '../../components/SearchComponent';
+import ExpandableSearch from '../../components/SearchComponent';
 
 const {width} = Dimensions.get('window');
 
@@ -153,9 +155,11 @@ const ModernHomeScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.searchBar}>
+        {/* <ExpandableSearch /> */}
+        {/* <SearchComponent /> */}
+        {/* <View style={styles.searchBar}>
           <TextInput placeholder="Search..." placeholderTextColor="#999" />
-        </View>
+        </View> */}
       </View>
       {/* 🔴 SECTION 2: COLLAPSIBLE (BOTTOM LAYER) */}
       <Animated.View style={[styles.collapsible, collapsibleStyle]}>
@@ -263,6 +267,7 @@ const ModernHomeScreen = () => {
         <View style={styles.fakeCard} />
         <View style={styles.fakeCard} />
       </Animated.ScrollView>
+      <ExpandableSearch />
     </View>
   );
 };
@@ -311,7 +316,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
 
-    zIndex: 1010, // 👈 BELOW EVERYTHING
+    zIndex: 900, // 👈 BELOW EVERYTHING
     paddingHorizontal: 20,
     overflow: 'hidden',
   },

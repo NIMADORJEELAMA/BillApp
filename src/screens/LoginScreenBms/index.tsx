@@ -24,6 +24,7 @@ import EyeOpen from '../../assets/Icons/eye_open.svg';
 import EyeClosed from '../../assets/Icons/eye_closed.svg';
 import {useNotifications} from '../../hooks/useNotifications';
 import DeviceInfo from 'react-native-device-info';
+import GradientButton from '../../components/Buttons/GradientButton';
 
 const LoginScreenBms = () => {
   const version = DeviceInfo.getVersion();
@@ -189,8 +190,14 @@ const LoginScreenBms = () => {
                   <Text style={styles.errorBannerText}>{errors.general}</Text>
                 </View>
               )}
-
-              <TouchableOpacity
+              <GradientButton
+                title={loading ? 'Logging in...' : 'Login'}
+                onPress={handleLogin}
+                loading={loading}
+                disabled={loading}
+                containerStyle={styles.btnPrimary}
+              />
+              {/* <TouchableOpacity
                 style={[styles.loginButton, loading && styles.disabledButton]}
                 onPress={handleLogin}
                 disabled={loading}>
@@ -199,7 +206,7 @@ const LoginScreenBms = () => {
                 ) : (
                   <Text style={styles.loginButtonText}>Login</Text>
                 )}
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
 
             <Text style={styles.footerText}>
