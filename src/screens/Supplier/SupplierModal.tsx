@@ -130,7 +130,7 @@ const SupplierModal = ({isVisible, initialData, onClose, onSelect}) => {
               </TouchableOpacity>
             </View>
 
-            {/* Form sdtgsdf*/}
+            {/* Form sdfghfgkhjjkh*/}
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.formContainer}>
