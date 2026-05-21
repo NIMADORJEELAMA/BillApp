@@ -20,6 +20,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import {useNavigation} from '@react-navigation/native';
+import SearchIcon from '../assets/Icons/search.svg';
 
 const FIXED_HEADER_HEIGHT = 80;
 const STATUSBAR = Platform.OS === 'ios' ? 50 : 20;
@@ -69,6 +70,18 @@ const SEARCHABLE_PAGES = [
     screen: 'Supplier',
   },
   {id: '9', title: 'Purchase', subtitle: 'Purchase orders', screen: 'Purchase'},
+  {
+    id: '10',
+    title: 'Product List',
+    subtitle: 'View and manage products',
+    screen: 'ProductListScreen',
+  },
+  {
+    id: '11',
+    title: 'Printer Settings',
+    subtitle: 'Configure printer options',
+    screen: 'PrinterSettings',
+  },
 ];
 
 const ExpandableSearch = () => {
@@ -217,8 +230,19 @@ const ExpandableSearch = () => {
               <TouchableOpacity
                 style={styles.resultItem}
                 onPress={() => handleNavigate(item.screen)}>
-                <Text style={styles.resultTitle}>{item.title}</Text>
-                <Text style={styles.resultSubtitle}>{item.subtitle}</Text>
+                {/* SVG Icon inserted here */}
+                <SearchIcon
+                  width={24}
+                  height={24}
+                  color="#555"
+                  style={styles.itemIcon}
+                />
+
+                {/* Wrapped text container */}
+                <View style={styles.textContainer}>
+                  <Text style={styles.resultTitle}>{item.title}</Text>
+                  <Text style={styles.resultSubtitle}>{item.subtitle}</Text>
+                </View>
               </TouchableOpacity>
             )}
             ListEmptyComponent={
@@ -297,21 +321,37 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   listContent: {
     padding: 20,
     paddingBottom: 40,
   },
+  // resultItem: {
+  //   backgroundColor: '#fff',
+  //   padding: 10,
+  //   borderRadius: 12,
+  //   marginBottom: 10,
+  //   shadowColor: '#000',
+  //   shadowOffset: {width: 0, height: 1},
+  //   shadowOpacity: 0.05,
+  //   shadowRadius: 2,
+  //   elevation: 1,
+  // },
   resultItem: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    flexDirection: 'row', // Places the SVG and text side-by-side
+    alignItems: 'center', // Vertically centers the SVG with the text block
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  itemIcon: {
+    marginRight: 16, // Space between SVG and text
+  },
+  textContainer: {
+    flex: 1, // Allows text to take up remaining width
+    flexDirection: 'column', // Stacks title and subtitle vertically
   },
   resultTitle: {
     fontSize: 16,

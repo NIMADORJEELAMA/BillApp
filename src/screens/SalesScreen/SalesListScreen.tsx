@@ -345,7 +345,7 @@ export default function SalesListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#f3f3f3',
   },
   headerFilter: {
     backgroundColor: '#FFFFFF',
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    elevation: 3,
+    elevation: 1,
     shadowColor: '#0F172A',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.05,

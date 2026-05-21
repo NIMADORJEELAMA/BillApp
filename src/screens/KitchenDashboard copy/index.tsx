@@ -522,7 +522,7 @@ const KitchenDashboard = () => {
         // onRefresh={onRefresh}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="cafe-outline" size={60} color="#cbd5e1" />
+            {/* <Ionicons name="cafe-outline" size={60} color="#cbd5e1" /> */}
             <Text style={styles.emptyText}>Kitchen Clear</Text>
           </View>
         }
