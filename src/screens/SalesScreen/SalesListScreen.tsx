@@ -221,7 +221,7 @@ export default function SalesListScreen() {
   return (
     <MainLayout title="Sales History" showBack>
       <View style={styles.container}>
-        {/* Header Content with Filterasdf klj;sdfasdf */}
+        {/* Header Content with Filterasdf klj;wefgdfg */}
         <View style={styles.headerFilter}>
           <SearchBar
             placeholder="Search Bill # or Cashier..."
