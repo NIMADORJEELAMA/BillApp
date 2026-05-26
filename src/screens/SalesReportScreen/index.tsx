@@ -263,36 +263,44 @@ const SalesReportScreen = () => {
         {/* Categories Sold Breakdown Section */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Sales by Category</Text>
-          {reportData.categoryBreakdown.length > 0 ? (
-            reportData.categoryBreakdown.map((item: any, idx: number) => {
-              const percentageWidth = (item.revenue / maxCategoryVolume) * 100;
-              return (
-                <View key={idx} style={styles.categoryRow}>
-                  <View style={styles.categoryMetaRow}>
-                    <Text style={styles.categoryNameText}>{item.name}</Text>
-                    <Text style={styles.categoryVolumeText}>
-                      {item.quantity} units •{' '}
-                      <Text style={styles.boldText}>
-                        ₹{Number(item.revenue).toLocaleString()}
+
+          {/* Add ScrollView Here */}
+          <ScrollView
+            nestedScrollEnabled={true}
+            showsVerticalScrollIndicator={true}>
+            {reportData.categoryBreakdown.length > 0 ? (
+              reportData.categoryBreakdown.map((item: any, idx: number) => {
+                const percentageWidth =
+                  (item.revenue / maxCategoryVolume) * 100;
+                return (
+                  <View key={idx} style={styles.categoryRow}>
+                    {/* ... keeping your existing category meta row and progress bar ... */}
+                    <View style={styles.categoryMetaRow}>
+                      <Text style={styles.categoryNameText}>{item.name}</Text>
+                      <Text style={styles.categoryVolumeText}>
+                        {item.quantity} units •{' '}
+                        <Text style={styles.boldText}>
+                          ₹{Number(item.revenue).toLocaleString()}
+                        </Text>
                       </Text>
-                    </Text>
+                    </View>
+                    <View style={styles.progressTrackBar}>
+                      <View
+                        style={[
+                          styles.progressFillBar,
+                          {width: `${percentageWidth}%`},
+                        ]}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.progressTrackBar}>
-                    <View
-                      style={[
-                        styles.progressFillBar,
-                        {width: `${percentageWidth}%`},
-                      ]}
-                    />
-                  </View>
-                </View>
-              );
-            })
-          ) : (
-            <Text style={styles.emptyText}>
-              No category distribution datasets available
-            </Text>
-          )}
+                );
+              })
+            ) : (
+              <Text style={styles.emptyText}>
+                No category distribution datasets available
+              </Text>
+            )}
+          </ScrollView>
         </View>
 
         {/* Payment Distribution Matrix */}
@@ -367,6 +375,8 @@ const SalesReportScreen = () => {
         {/* Comprehensive Items Sold (Ranked Hierarchically at Top) */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Complete Product Performance</Text>
+
+          {/* Keep Headers Fixed Outside the ScrollView */}
           <View style={styles.tableHeaderRow}>
             <Text style={[styles.tableHeaderCell, {flex: 2}]}>
               Product Name
@@ -379,35 +389,40 @@ const SalesReportScreen = () => {
             </Text>
           </View>
 
-          {reportData.allItemsSold.length > 0 ? (
-            reportData.allItemsSold.map((product: any, idx: number) => (
-              <View
-                key={idx}
-                style={[
-                  styles.tableDataRow,
-                  idx % 2 === 1 && styles.tableRowAlternated,
-                ]}>
-                <View style={{flex: 2}}>
-                  <Text style={styles.productItemNameText} numberOfLines={1}>
-                    {product.name}
+          {/* Add ScrollView Here for the Data Rows */}
+          <ScrollView
+            nestedScrollEnabled={true}
+            showsVerticalScrollIndicator={true}>
+            {reportData.allItemsSold.length > 0 ? (
+              reportData.allItemsSold.map((product: any, idx: number) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.tableDataRow,
+                    idx % 2 === 1 && styles.tableRowAlternated,
+                  ]}>
+                  <View style={{flex: 2}}>
+                    <Text style={styles.productItemNameText} numberOfLines={1}>
+                      {product.name}
+                    </Text>
+                    <Text style={styles.productItemCategorySubtext}>
+                      {product.categoryName}
+                    </Text>
+                  </View>
+                  <Text style={styles.productQtyTableCell}>
+                    {product.totalQuantitySold}
                   </Text>
-                  <Text style={styles.productItemCategorySubtext}>
-                    {product.categoryName}
+                  <Text style={styles.productRevenueTableCell}>
+                    ₹{Number(product.totalRevenueGenerated).toLocaleString()}
                   </Text>
                 </View>
-                <Text style={styles.productQtyTableCell}>
-                  {product.totalQuantitySold}
-                </Text>
-                <Text style={styles.productRevenueTableCell}>
-                  ₹{Number(product.totalRevenueGenerated).toLocaleString()}
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>
-              No items documented within selected timelines
-            </Text>
-          )}
+              ))
+            ) : (
+              <Text style={styles.emptyText}>
+                No items documented within selected timelines
+              </Text>
+            )}
+          </ScrollView>
         </View>
 
         <View style={{height: 40}} />
@@ -565,6 +580,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 15,
     padding: 20,
+    maxHeight: 400,
+    overflow: 'hidden',
+
     marginBottom: 20,
     elevation: 2,
     shadowColor: '#000',
