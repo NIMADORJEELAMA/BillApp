@@ -198,7 +198,7 @@ const CreatePurchaseScreen = ({navigation}) => {
           </TouchableOpacity>
         </View>
 
-        {/* Product Search & asdfasdf */}
+        {/* Product Search & asdfasdgfh */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Items</Text>
 
