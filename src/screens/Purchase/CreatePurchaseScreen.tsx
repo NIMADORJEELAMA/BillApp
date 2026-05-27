@@ -16,6 +16,7 @@ import Toast from 'react-native-toast-message';
 import color from '../../assets/Color/color';
 import DeleteIcon from '../../assets/Icons/trash.svg';
 import PlusIcon from '../../assets/Icons/plus.svg';
+import SearchableDropdown from '../../components/Dropdown/SearchableDropdownSupplier';
 
 const PAYMENT_MODES = ['CASH', 'ONLINE', 'CARD', 'CREDIT'];
 
@@ -176,30 +177,13 @@ const CreatePurchaseScreen = ({navigation}) => {
         {/* Supplier & Invoice Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Details</Text>
-
-          <Text style={styles.label}>Supplier *</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.chipScroll}>
-            {suppliers.map(sup => (
-              <TouchableOpacity
-                key={sup.id}
-                style={[
-                  styles.chip,
-                  supplierId === sup.id && styles.chipActive,
-                ]}
-                onPress={() => setSupplierId(sup.id)}>
-                <Text
-                  style={[
-                    styles.chipText,
-                    supplierId === sup.id && styles.chipTextActive,
-                  ]}>
-                  {sup.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <SearchableDropdown
+            data={suppliers}
+            value={supplierId}
+            onChange={setSupplierId}
+            placeholder="Select a supplier..."
+            searchPlaceholder="Search suppliers by name..."
+          />
 
           <Text style={styles.label}>Invoice Number</Text>
           <TextInput
