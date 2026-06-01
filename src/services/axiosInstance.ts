@@ -66,7 +66,7 @@ export const PRODUCTION_URL = 'https://api.hilltoptourism.in';
 
 // ⚠️ CRITICAL: If your router reboots, this IP might change.
 // Open your terminal and run `ipconfig` (Windows) or `ifconfig` (Mac) to verify this daily.
-export const LOCAL_IP = '192.168.1.14';
+export const LOCAL_IP = '192.168.1.50';
 
 const USE_PRODUCTION = false; // Set to true for live
 const IS_PHYSICAL_DEVICE = true; // Set to true if testing on a real phone, false for emulators

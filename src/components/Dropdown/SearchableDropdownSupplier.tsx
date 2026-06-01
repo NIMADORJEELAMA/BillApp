@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   itemTextSelected: {
-    color: '#2563eb', // Adjust to match your themeBlue
+    color: '#2563eb', // Adjust to match your fhgfhfgj
     fontWeight: '600',
   },
   noResults: {
