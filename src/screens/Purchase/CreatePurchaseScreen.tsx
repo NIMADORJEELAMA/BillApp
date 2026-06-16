@@ -143,7 +143,8 @@ const CreatePurchaseScreen = ({navigation}) => {
     if (items.length === 0)
       return Toast.show({type: 'error', text1: 'Add at least one item'});
 
-    // Format hih[oioiuliu]jhkjdhk
+    // Format asdfasdf
+
     const payload = {
       supplierId,
       invoiceNo,
